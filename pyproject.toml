@@ -1,0 +1,55 @@
+[project]
+name = "reliefchain-ai"
+version = "2.0.0"
+description = "Intelligent Humanitarian Aid Coordination, AI Emergency Triage, and SHA-256 Hash-Linked Transparency Ledger"
+authors = [{ name = "ReliefChain Engineering Team" }]
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    "node_modules",
+    "backend/alembic/versions",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults (FastAPI Depends)
+    "UP007", # Use `X | Y` for type annotations (keep typing.Union for compat)
+    "UP035", # deprecated imports
+    "UP038", # isinstance non-PEP 604
+    "B904",  # raise from
+]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+pythonpath = ["backend"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+[tool.pyright]
+extraPaths = ["backend"]
+include = ["backend"]
+

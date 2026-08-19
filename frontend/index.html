@@ -7,9 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#3B82F6" />
+  <meta name="description" content="ReliefChain AI — Humanitarian Disaster Response, AI Triage, and Transparency Ledger" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
+  <!-- Offline Indicator Banner -->
+  <div id="offline-banner" class="offline-banner" style="display: none;">
+    <span>⚡ <strong>Offline Mode</strong>: Operating on cached static shell. Dynamic mutations will sync when online.</span>
+  </div>
   <!-- Navigation Header -->
   <header class="navbar">
     <div class="brand" onclick="switchTab('landing')">
@@ -23,19 +31,48 @@
 
     <ul class="nav-links">
       <li class="nav-item active" data-tab="landing" onclick="switchTab('landing')">Overview</li>
-      <li class="nav-item" data-tab="dashboard" onclick="switchTab('dashboard')">Mission Control</li>
-      <li class="nav-item" data-tab="requests" onclick="switchTab('requests')">Relief Requests</li>
-      <li class="nav-item" data-tab="resources" onclick="switchTab('resources')">Inventory Depot</li>
-      <li class="nav-item" data-tab="distributions" onclick="switchTab('distributions')">Distributions & QR</li>
-      <li class="nav-item" data-tab="ledger" onclick="switchTab('ledger')">Transparency Ledger</li>
-      <li class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">Analytics</li>
+      <li class="nav-item" data-tab="citizen-dashboard" onclick="switchTab('citizen-dashboard')">Citizen Hub</li>
+      <li class="nav-item" data-tab="volunteer-dashboard" onclick="switchTab('volunteer-dashboard')">Volunteer Ops</li>
+      <li class="nav-item" data-tab="command-center" onclick="switchTab('command-center')">Incident Command</li>
+      <li class="nav-item" data-tab="copilot-view" onclick="switchTab('copilot-view')">AI Copilot</li>
+      <li class="nav-item" data-tab="digital-twin-view" onclick="switchTab('digital-twin-view')">Digital Twin</li>
+      <li class="nav-item" data-tab="shortage-radar-view" onclick="switchTab('shortage-radar-view')">Shortage Radar</li>
+      <li class="nav-item" data-tab="transparency-journey-view" onclick="switchTab('transparency-journey-view')">Transparency Journey</li>
+      <li class="nav-item" data-tab="story-mode-view" onclick="switchTab('story-mode-view')">Story Mode</li>
+      <li class="nav-item" data-tab="demo-mode-view" onclick="switchTab('demo-mode-view')">Demo Scenarios</li>
+      <li class="nav-item" data-tab="geomap" onclick="switchTab('geomap')">Disaster Map</li>
+      <li class="nav-item" data-tab="system-health-view" onclick="switchTab('system-health-view')">System Health</li>
+      <li class="nav-item" data-tab="pitch-deck-view" onclick="switchTab('pitch-deck-view')">Why ReliefChain?</li>
     </ul>
 
     <div class="nav-actions">
-      <div class="live-pill">
+      <button id="theme-toggle-btn" class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌓 Theme</button>
+      <div id="ws-status-badge" class="live-pill">
         <div class="pulse-dot"></div>
-        <span>LEDGER ACTIVE</span>
+        <span id="ws-status-text">LIVE</span>
       </div>
+
+      <!-- Real-Time Notification Bell -->
+      <div class="notif-bell-container">
+        <button id="notif-bell-btn" class="notif-bell-btn" onclick="toggleNotificationDropdown()" title="Emergency Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span id="notif-badge-count" class="notif-badge" style="display: none;">0</span>
+        </button>
+
+        <div id="notif-dropdown-panel" class="notif-dropdown">
+          <div class="notif-header">
+            <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">🚨 Disaster Alerts</span>
+            <button class="btn btn-sm btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" onclick="markAllNotificationsRead()">Mark All Read</button>
+          </div>
+          <div id="notif-items-list" class="notif-list">
+            <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem;">No unread notifications</div>
+          </div>
+        </div>
+      </div>
+
       <button id="nav-auth-btn" class="btn btn-sm btn-primary" onclick="openModal('auth-modal')">Sign In</button>
       <div id="nav-user-profile" style="display: none; align-items: center; gap: 0.75rem;"></div>
     </div>
@@ -43,9 +80,28 @@
 
   <!-- Main Application Container -->
   <main class="container">
+
+    <!-- Quick Persona & Live Demo Action Bar (For Presentations & Demos) -->
+    <div class="persona-bar glass-panel" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; border: 1px solid rgba(6, 182, 212, 0.3); border-radius: var(--radius-lg); flex-wrap: wrap; gap: 0.75rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.05em;">🎭 Persona Switcher:</span>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchPersona('admin')">🔑 Admin Command</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchPersona('volunteer')">🦺 Field Volunteer</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchPersona('citizen')">📍 Citizen Resident</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchPersona('ngo')">🏢 Relief NGO</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchPersona('donor')">💙 Aid Donor</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <button class="btn btn-sm btn-danger" style="font-size: 0.75rem; padding: 0.25rem 0.75rem; font-weight: 700;" onclick="openModal('one-tap-sos-modal')">🚨 One-Tap SOS</button>
+        <button class="btn btn-sm btn-primary" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchTab('copilot-view')">🤖 AI Copilot</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchTab('story-mode-view')">📖 Story Mode</button>
+        <button class="btn btn-sm btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" onclick="switchTab('demo-mode-view')">🧪 Demo Scenarios</button>
+      </div>
+    </div>
     
     <!-- ==================== TAB 1: LANDING & OVERVIEW ==================== -->
     <section id="tab-landing" class="tab-content active">
+
       <div class="hero">
         <div class="hero-badge">
           <span>⚡ AI Triage Decision Support & Merkle-Linked Transparency</span>
@@ -146,12 +202,619 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 2: MISSION CONTROL DASHBOARD ==================== -->
-    <section id="tab-dashboard" class="tab-content">
+    <!-- ==================== TAB: CITIZEN SMART DASHBOARD ==================== -->
+    <section id="tab-citizen-dashboard" class="tab-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
-          <h2 style="font-size: 1.75rem; font-weight: 800;">Emergency Operations Center</h2>
-          <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time triage dispatch, active relief missions, and warehouse balances.</p>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">📍 Citizen Emergency Hub</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time personal SOS distress status, safe evacuation shelters, and instant triage dispatch.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-danger" style="font-weight: 800; padding: 0.6rem 1.4rem;" onclick="openModal('one-tap-sos-modal')">🚨 One-Tap Emergency SOS</button>
+          <button class="btn btn-outline" onclick="loadCitizenDashboardData()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Human-in-the-Loop Emergency Disclaimer -->
+      <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--text-main); display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.2rem;">⚠️</span>
+        <span><strong>Emergency Authority Notice:</strong> AI recommendations are decision-support only and do not replace emergency authorities or professional first responders. In life-threatening emergencies, please also call local official emergency services immediately.</span>
+      </div>
+
+      <!-- Citizen Top Status Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="kpi-card" style="border-left: 4px solid var(--accent-rose);">
+          <div class="card-header"><span class="card-title">My Active SOS Intakes</span><div class="card-icon" style="background: rgba(244,63,94,0.15); color: var(--accent-rose);">🚨</div></div>
+          <div id="cit-active-sos-count" class="card-value">0</div>
+          <div class="card-subtitle">Emergency distress requests</div>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--accent-emerald);">
+          <div class="card-header"><span class="card-title">Nearby Safe Shelters</span><div class="card-icon" style="background: rgba(16,185,129,0.15); color: var(--accent-emerald);">🛡️</div></div>
+          <div id="cit-safe-zones-count" class="card-value">3</div>
+          <div class="card-subtitle">Verified high-ground relief hubs</div>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--accent-cyan);">
+          <div class="card-header"><span class="card-title">Aid Deliveries Received</span><div class="card-icon" style="background: rgba(6,182,212,0.15); color: var(--accent-cyan);">📦</div></div>
+          <div id="cit-deliveries-count" class="card-value">0</div>
+          <div class="card-subtitle">QR-verified physical handovers</div>
+        </div>
+      </div>
+
+      <!-- Main Citizen Operations: Active Requests & Safe Zones -->
+      <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left: My Relief Requests -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">📋 My Emergency Relief Requests</h3>
+            <button class="btn btn-sm btn-outline" onclick="openModal('one-tap-sos-modal')">+ Create SOS</button>
+          </div>
+          <div id="cit-my-requests-list" style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading your relief requests...</p>
+          </div>
+        </div>
+
+        <!-- Right: Safe Shelters & Nearby Hazards -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">🛡️ Safe Evacuation Zones & Relief Hubs</h3>
+            <div id="cit-safe-locations-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <p style="text-align: center; color: var(--text-muted);">Loading safe shelters...</p>
+            </div>
+          </div>
+
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">⚠️ Nearby Monitored Hazards</h3>
+            <div id="cit-nearby-hazards-list" style="display: flex; flex-direction: column; gap: 0.6rem;">
+              <p style="text-align: center; color: var(--text-muted);">Loading hazard proximity...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: VOLUNTEER SMART OPERATIONS ==================== -->
+    <section id="tab-volunteer-dashboard" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🦺 Volunteer Operations Center</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Smart volunteer mission assignment, AI match scoring, and field delivery verification.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-primary" onclick="openModal('verify-qr-modal')">📷 Scan Delivery QR Token</button>
+          <button class="btn btn-outline" onclick="loadVolunteerDashboardData()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Volunteer Profile & Workload KPIs -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-cyan);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Responder Persona</div>
+          <div id="vol-profile-name" style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0.25rem 0;">Phase 10 Responder</div>
+          <div id="vol-profile-skills" style="font-size: 0.78rem; color: var(--accent-cyan);">First Aid, Search & Rescue</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-amber);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Workload Capacity</div>
+          <div id="vol-workload-val" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-amber); margin: 0.25rem 0;">1 / 4 Missions</div>
+          <div class="progress-bar-container" style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px;">
+            <div id="vol-workload-bar" style="background: var(--accent-amber); height: 100%; width: 25%; border-radius: 3px;"></div>
+          </div>
+        </div>
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-emerald);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Reliability Score</div>
+          <div id="vol-reliability-val" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-emerald); margin: 0.25rem 0;">96%</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Verified Deliveries Sealed</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-purple);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Completed Missions</div>
+          <div id="vol-completed-val" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-purple); margin: 0.25rem 0;">--</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">All-time handovers</div>
+        </div>
+      </div>
+
+      <!-- Missions Grid: Active Assigned vs AI Recommended -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left: My Assigned Missions -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">🎯 My Active Mission Assignments</h3>
+            <span id="vol-assigned-badge" class="badge badge-primary">0 Active</span>
+          </div>
+          <div id="vol-assigned-missions-list" style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <p style="text-align: center; color: var(--text-muted); padding: 2rem;">No missions currently assigned.</p>
+          </div>
+        </div>
+
+        <!-- Right: AI Recommended Missions (Smart Matching Engine) -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">🧠 AI Recommended Missions (Smart Matching)</h3>
+            <span class="badge badge-success">Weighted 4-Factor DSS</span>
+          </div>
+          <div id="vol-recommended-missions-list" style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading recommended missions...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: AI DISASTER COPILOT ==================== -->
+    <section id="tab-copilot-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🤖 ReliefChain AI Disaster Copilot</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Rule-based operational assistant for incident reasoning, shortage diagnosis, and smart dispatch.</p>
+        </div>
+        <span class="badge badge-success" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">● REAL-TIME DECISION SUPPORT</span>
+      </div>
+
+      <!-- Copilot Human-in-the-Loop Disclaimer -->
+      <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-md); padding: 0.65rem 1.25rem; margin-bottom: 1.25rem; font-size: 0.82rem; color: var(--text-main); display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 1.1rem;">🛡️</span>
+        <span><strong>Operational Oversight:</strong> All AI triage and logistics recommendations are decision-support aids derived from verified database telemetry. Human dispatchers and incident commanders retain final authority over all life-safety actions.</span>
+      </div>
+
+      <!-- Suggested Prompts Chips -->
+      <div class="glass-panel" style="padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.6rem;">⚡ Quick Command Prompts:</div>
+        <div id="copilot-suggested-chips" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          <button class="btn btn-sm btn-outline" onclick="sendCopilotQuery('Show critical active disaster incidents')">🚨 Show Critical Incidents</button>
+          <button class="btn btn-sm btn-outline" onclick="sendCopilotQuery('Find critical resource shortages across all sectors')">📦 Find Resource Shortages</button>
+          <button class="btn btn-sm btn-outline" onclick="sendCopilotQuery('Recommend top volunteers for priority missions')">🦺 Recommend Volunteers</button>
+          <button class="btn btn-sm btn-outline" onclick="sendCopilotQuery('Identify highest risk disaster zones and impact perimeters')">🌐 Show Highest-Risk Areas</button>
+          <button class="btn btn-sm btn-outline" onclick="sendCopilotQuery('Summarize overall humanitarian command status')">📊 Command Summary</button>
+        </div>
+      </div>
+
+      <!-- Copilot Chat Console -->
+      <div class="glass-panel" style="padding: 1.5rem; display: flex; flex-direction: column; min-height: 480px;">
+        <div id="copilot-chat-stream" style="flex: 1; overflow-y: auto; max-height: 420px; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.25rem; padding-right: 0.5rem;">
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-md); padding: 1rem 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <strong style="color: var(--accent-cyan); font-size: 0.9rem;">ReliefChain AI Copilot</strong>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">System Assistant</span>
+            </div>
+            <p style="font-size: 0.88rem; line-height: 1.5; color: var(--text-main);">
+              Welcome to the Emergency Operations Copilot. I analyze live telemetry, multi-hazard incident perimeters, SPHERE supply ratios, and volunteer availability to provide actionable response directives. Select a prompt chip above or type an operational query below.
+            </p>
+          </div>
+        </div>
+
+        <form id="copilot-input-form" onsubmit="handleCopilotSubmit(event)" style="display: flex; gap: 0.75rem;">
+          <input id="copilot-query-input" type="text" class="form-control" placeholder="Ask Copilot (e.g. 'Why is Incident #1 classified with high severity?' or 'Show food shortages')..." required />
+          <button type="submit" class="btn btn-primary" style="padding: 0 1.5rem; font-weight: 700;">Send Query</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: DISASTER DIGITAL TWIN ==================== -->
+    <section id="tab-digital-twin-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🌐 Disaster Digital Twin Simulator</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Interactive contingency scenario modeler projecting multi-hazard timelines and SPHERE resource burn rates.</p>
+        </div>
+        <span class="badge badge-primary">SIMULATION SANDBOX</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left: Simulation Controls -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;">⚙️ Scenario Parameters</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Hazard Type</label>
+            <select id="dt-hazard-type" class="form-control" onchange="runDigitalTwinSimulation()">
+              <option value="flood">Flash Flood / River Inundation</option>
+              <option value="cyclone" selected>Category 4 Tropical Cyclone</option>
+              <option value="earthquake">Magnitude 7.2 Crustal Earthquake</option>
+              <option value="wildfire">Fast-Moving Scrub Wildfire</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between;">
+              <label class="form-label">Hazard Severity Index</label>
+              <span id="dt-severity-val" style="font-weight: 800; color: var(--accent-rose);">8.5 / 10.0</span>
+            </div>
+            <input id="dt-severity-slider" type="range" min="1.0" max="10.0" step="0.5" value="8.5" class="form-control" oninput="document.getElementById('dt-severity-val').textContent = this.value + ' / 10.0'; runDigitalTwinSimulation();" />
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between;">
+              <label class="form-label">Affected Population</label>
+              <span id="dt-pop-val" style="font-weight: 800; color: var(--accent-cyan);">15,000</span>
+            </div>
+            <input id="dt-pop-slider" type="range" min="500" max="50000" step="500" value="15000" class="form-control" oninput="document.getElementById('dt-pop-val').textContent = Number(this.value).toLocaleString(); runDigitalTwinSimulation();" />
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between;">
+              <label class="form-label">Impact Radius (km)</label>
+              <span id="dt-radius-val" style="font-weight: 800; color: var(--accent-amber);">35 km</span>
+            </div>
+            <input id="dt-radius-slider" type="range" min="5" max="100" step="5" value="35" class="form-control" oninput="document.getElementById('dt-radius-val').textContent = this.value + ' km'; runDigitalTwinSimulation();" />
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between;">
+              <label class="form-label">Simulation Horizon</label>
+              <span id="dt-duration-val" style="font-weight: 800; color: var(--accent-purple);">24 Hours</span>
+            </div>
+            <input id="dt-duration-slider" type="range" min="6" max="72" step="6" value="24" class="form-control" oninput="document.getElementById('dt-duration-val').textContent = this.value + ' Hours'; runDigitalTwinSimulation();" />
+          </div>
+
+          <button class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;" onclick="runDigitalTwinSimulation()">⚡ Recalculate Model</button>
+        </div>
+
+        <!-- Right: Simulation Results & Hour Timeline -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Resource Demand Matrix -->
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">📊 Projected Relief Demand (SPHERE Standard)</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem;">
+              <div class="glass-panel" style="padding: 0.85rem; text-align: center; border-top: 3px solid var(--accent-cyan);">
+                <div id="dt-water-need" style="font-size: 1.3rem; font-weight: 800; color: var(--accent-cyan);">225,000 L</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Drinking Water</div>
+              </div>
+              <div class="glass-panel" style="padding: 0.85rem; text-align: center; border-top: 3px solid var(--accent-amber);">
+                <div id="dt-food-need" style="font-size: 1.3rem; font-weight: 800; color: var(--accent-amber);">45,000</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Ration Packs</div>
+              </div>
+              <div class="glass-panel" style="padding: 0.85rem; text-align: center; border-top: 3px solid var(--accent-rose);">
+                <div id="dt-med-need" style="font-size: 1.3rem; font-weight: 800; color: var(--accent-rose);">750</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Trauma Kits</div>
+              </div>
+              <div class="glass-panel" style="padding: 0.85rem; text-align: center; border-top: 3px solid var(--accent-purple);">
+                <div id="dt-vol-need" style="font-size: 1.3rem; font-weight: 800; color: var(--accent-purple);">120</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Responders Needed</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hour-by-Hour Disaster Response Milestones -->
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">⏱️ Projected Response Timeline</h3>
+            <div id="dt-timeline-milestones" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <!-- Milestones populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+        * Note: Digital twin predictions are computational estimates generated by ReliefChain AI DSS for disaster preparedness planning.
+      </p>
+    </section>
+
+    <!-- ==================== TAB: RESOURCE SHORTAGE RADAR ==================== -->
+    <section id="tab-shortage-radar-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">📡 Resource Shortage Radar</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time inventory gap detection cross-referencing depot balances against SPHERE relief demand.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <select id="shortage-horizon-select" class="form-control" style="width: 140px;" onchange="loadShortageRadarData()">
+            <option value="3" selected>3-Day Buffer</option>
+            <option value="5">5-Day Buffer</option>
+            <option value="7">7-Day Buffer</option>
+          </select>
+          <button class="btn btn-outline" onclick="loadShortageRadarData()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Radar Summary Banner -->
+      <div class="glass-panel" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted);">Overall Supply Chain Threat Level:</span>
+          <div id="radar-threat-title" style="font-size: 1.4rem; font-weight: 800; color: var(--accent-rose); margin-top: 0.2rem;">CRITICAL SHORTAGE DETECTED</div>
+        </div>
+        <div id="radar-summary-badges" style="display: flex; gap: 0.75rem;">
+          <span id="radar-crit-badge" class="badge badge-danger">2 Critical Stockouts</span>
+          <span id="radar-warn-badge" class="badge badge-warning">1 Shortage Risk</span>
+        </div>
+      </div>
+
+      <!-- Radar Grid Cards -->
+      <div id="shortage-radar-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+        <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading shortage radar matrix...</p>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: TRANSPARENCY JOURNEY ==================== -->
+    <section id="tab-transparency-journey-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🔍 Public Transparency Journey</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Trace humanitarian aid from donor contribution to on-chain ledger block and single-use QR verification.</p>
+        </div>
+        <span class="badge badge-primary">SHA-256 PROOF-OF-DELIVERY</span>
+      </div>
+
+      <!-- Journey Search Bar -->
+      <div class="glass-panel" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+        <form onsubmit="handleJourneySearch(event)" style="display: flex; gap: 0.75rem;">
+          <input id="journey-search-input" type="text" class="form-control" placeholder="Enter Donation ID, Mission Ref, or Blockchain Transaction Hash..." required />
+          <button type="submit" class="btn btn-primary" style="padding: 0 1.5rem; font-weight: 700;">Trace Aid Journey</button>
+        </form>
+      </div>
+
+      <!-- Visual 6-Stage Roadmap -->
+      <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h3 id="journey-pipeline-title" style="font-size: 1.1rem; font-weight: 700;">🚀 Verified Aid Delivery Pipeline</h3>
+          <span id="journey-status-pill" class="badge badge-success">VERIFIED ON CHAIN</span>
+        </div>
+        <div id="journey-steps-container" style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Recent Verifiable Aid Journeys -->
+      <div class="glass-panel" style="padding: 1.5rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">📜 Recent Verifiable Community Handover Journeys</h3>
+        <div id="latest-journeys-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+          <p style="text-align: center; color: var(--text-muted);">Loading recent journeys...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: DISASTER STORY MODE ==================== -->
+    <section id="tab-story-mode-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">📖 Disaster Story Mode</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Interactive step-by-step narrative presentation for project judges, conferences, and hackathons.</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="story-prev-btn" class="btn btn-outline" onclick="storyPrevStep()">⏮️ Previous</button>
+          <button id="story-play-btn" class="btn btn-primary" onclick="toggleStoryAutoPlay()">▶️ Auto Play</button>
+          <button id="story-next-btn" class="btn btn-outline" onclick="storyNextStep()">Next ⏭️</button>
+        </div>
+      </div>
+
+      <!-- Story Mode Active Card -->
+      <div class="glass-panel" style="padding: 2rem; margin-bottom: 1.5rem; border: 1px solid rgba(6, 182, 212, 0.4); min-height: 380px; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span id="story-step-indicator" class="badge badge-primary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">STEP 1 OF 9</span>
+            <span id="story-module-badge" style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">EARLY DETECTION PHASE</span>
+          </div>
+          <h3 id="story-title" style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.75rem;">Step 1: Multi-Hazard Ingestion & Early Warning</h3>
+          <p id="story-desc" style="font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Satellite and ground radar sensors ingest cyclone and flash flood alerts. The Ingestion Engine normalizes GPS telemetry and establishes an active incident record.
+          </p>
+          <div id="story-tech-highlight" style="background: rgba(255,255,255,0.04); border-left: 3px solid var(--accent-cyan); padding: 0.85rem 1.25rem; border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--accent-cyan);">
+            ⚙️ Backend Engine: Abstract DisasterProvider + Normalization + SHA-256 Fingerprint Deduplication
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+          <div id="story-progress-dots" style="display: flex; gap: 0.5rem;">
+            <!-- Dots generated by JS -->
+          </div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Use Auto Play or arrow buttons to navigate.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: DEMO SCENARIOS ==================== -->
+    <section id="tab-demo-mode-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🧪 Multi-Hazard Demo Scenarios</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Pre-packaged crisis simulation datasets for zero-dependency live college presentations.</p>
+        </div>
+        <span class="badge badge-success">ISOLATED DEMO SANDBOX</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Scenario 1 -->
+        <div class="glass-panel" style="padding: 1.5rem; border-top: 4px solid var(--accent-cyan); display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="badge badge-danger">CYCLONE & FLOOD</span>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">Severity 8.8 / 10</span>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Coastal Cyclone Surge (Category 4)</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+              Landfall with 4.5m storm surge, 12,500 stranded residents in Delta Sector 4, acute potable water shortages, and rooftop rescues.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 700;" onclick="triggerLoadDemoScenario('flood_cyclone_crisis')">🚀 Load Cyclone Scenario</button>
+        </div>
+
+        <!-- Scenario 2 -->
+        <div class="glass-panel" style="padding: 1.5rem; border-top: 4px solid var(--accent-rose); display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="badge badge-danger">EARTHQUAKE</span>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">Severity 9.3 / 10</span>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Magnitude 7.4 Major Earthquake</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+              Urban structural collapses, 24,000 affected, severe trauma surgery demands, blocked transit corridors, and field triage deployment.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 700;" onclick="triggerLoadDemoScenario('seismic_emergency')">🚀 Load Earthquake Scenario</button>
+        </div>
+
+        <!-- Scenario 3 -->
+        <div class="glass-panel" style="padding: 1.5rem; border-top: 4px solid var(--accent-amber); display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="badge badge-warning">WILDFIRE</span>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">Severity 7.8 / 10</span>
+            </div>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Fast-Moving Foothills Wildfire</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+              High-velocity brush fire, 6,500 evacuees, dense smoke cover, evacuation transport bottlenecks, and emergency shelter demands.
+            </p>
+          </div>
+          <button class="btn btn-primary" style="width: 100%; font-weight: 700;" onclick="triggerLoadDemoScenario('wildfire_evacuation')">🚀 Load Wildfire Scenario</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: SYSTEM HEALTH DASHBOARD ==================== -->
+    <section id="tab-system-health-view" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🩺 System Health & DevOps Telemetry</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Comprehensive production observability, database connection pools, AI model status, and OpenMetrics.</p>
+        </div>
+        <button class="btn btn-outline" onclick="loadSystemHealthData()">↻ Refresh Health</button>
+      </div>
+
+      <!-- Health Overview Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-emerald);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">System Health Status</div>
+          <div id="sh-overall-status" style="font-size: 1.4rem; font-weight: 800; color: var(--accent-emerald); margin: 0.25rem 0;">HEALTHY (100%)</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">All probes passing</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-cyan);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">API Latency</div>
+          <div id="sh-latency-val" style="font-size: 1.4rem; font-weight: 800; color: var(--accent-cyan); margin: 0.25rem 0;">1.2 ms</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Average response time</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-purple);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">AI Model Accuracy</div>
+          <div id="sh-ai-acc-val" style="font-size: 1.4rem; font-weight: 800; color: var(--accent-purple); margin: 0.25rem 0;">94.2%</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Random Forest Classifier v2.4.0</div>
+        </div>
+        <div class="glass-panel" style="padding: 1.25rem; border-left: 4px solid var(--accent-amber);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Ledger State</div>
+          <div id="sh-ledger-state" style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber); margin: 0.25rem 0;">SEALED</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Sequential SHA-256 Hashes</div>
+        </div>
+      </div>
+
+      <!-- Subsystems Detail Table -->
+      <div class="glass-panel" style="padding: 1.5rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">⚙️ Subsystem Diagnostics</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Subsystem Component</th>
+                <th>Status</th>
+                <th>Engine / Protocol</th>
+                <th>Security & Metrics</th>
+              </tr>
+            </thead>
+            <tbody id="sh-subsystems-tbody">
+              <tr><td>FastAPI Core REST & WS</td><td><span class="badge badge-success">OPERATIONAL</span></td><td>HTTP/1.1 + WebSocket</td><td>OWASP Headers + Rate Limiting</td></tr>
+              <tr><td>SQLAlchemy 2.0 Persistence</td><td><span class="badge badge-success">OPERATIONAL</span></td><td>SQLite Local / PostgreSQL Prod</td><td>Connection Pool pre_ping Verified</td></tr>
+              <tr><td>RandomForest Emergency Classifier</td><td><span class="badge badge-success">OPERATIONAL</span></td><td>Scikit-Learn Joblib Model</td><td>94.2% Test Accuracy</td></tr>
+              <tr><td>Blockchain Transparency Ledger</td><td><span class="badge badge-success">OPERATIONAL</span></td><td>SHA-256 Hash Chain</td><td>Cryptographic QR Verification</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: WHY RELIEFCHAIN AI? (PITCH DECK) ==================== -->
+    <section id="tab-pitch-deck-view" class="tab-content">
+      <div style="text-align: center; max-width: 800px; margin: 0 auto 2.5rem;">
+        <span class="hero-badge">🏆 COLLEGE COMPETITION & STARTUP PRESENTATION</span>
+        <h2 style="font-size: 2.2rem; font-weight: 800; margin: 0.75rem 0;">Why ReliefChain <span class="highlight">AI</span>?</h2>
+        <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.6;">
+          Bridging the critical gap in humanitarian disaster response through explainable AI decision support, multi-hazard intelligence, and tamper-evident blockchain transparency.
+        </p>
+      </div>
+
+      <!-- End-to-End System Flow -->
+      <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; text-align: center; margin-bottom: 1.5rem; color: var(--accent-cyan);">⚡ Complete End-to-End Operational Lifecycle</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; text-align: center;">
+          <div style="flex: 1; min-width: 100px; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-md);">
+            <div style="font-size: 1.5rem;">📡</div>
+            <div style="font-weight: 700; font-size: 0.8rem; margin-top: 0.3rem;">Disaster Detection</div>
+          </div>
+          <div style="color: var(--accent-cyan); font-weight: 800;">→</div>
+          <div style="flex: 1; min-width: 100px; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-md);">
+            <div style="font-size: 1.5rem;">🧠</div>
+            <div style="font-weight: 700; font-size: 0.8rem; margin-top: 0.3rem;">AI Risk & Triage</div>
+          </div>
+          <div style="color: var(--accent-cyan); font-weight: 800;">→</div>
+          <div style="flex: 1; min-width: 100px; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-md);">
+            <div style="font-size: 1.5rem;">📦</div>
+            <div style="font-weight: 700; font-size: 0.8rem; margin-top: 0.3rem;">Demand Forecasting</div>
+          </div>
+          <div style="color: var(--accent-cyan); font-weight: 800;">→</div>
+          <div style="flex: 1; min-width: 100px; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-md);">
+            <div style="font-size: 1.5rem;">🦺</div>
+            <div style="font-weight: 700; font-size: 0.8rem; margin-top: 0.3rem;">Volunteer Matching</div>
+          </div>
+          <div style="color: var(--accent-cyan); font-weight: 800;">→</div>
+          <div style="flex: 1; min-width: 100px; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-md);">
+            <div style="font-size: 1.5rem;">📷</div>
+            <div style="font-weight: 700; font-size: 0.8rem; margin-top: 0.3rem;">QR Proof Delivery</div>
+          </div>
+          <div style="color: var(--accent-cyan); font-weight: 800;">→</div>
+          <div style="flex: 1; min-width: 100px; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-md);">
+            <div style="font-size: 1.5rem;">⛓️</div>
+            <div style="font-weight: 700; font-size: 0.8rem; margin-top: 0.3rem;">Cryptographic Ledger</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison Matrix -->
+      <div class="glass-panel" style="padding: 2rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; text-align: center; margin-bottom: 1.5rem;">⚖️ Traditional Humanitarian Relief vs ReliefChain AI</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Operational Dimension</th>
+                <th style="color: var(--accent-rose);">Traditional Humanitarian Response</th>
+                <th style="color: var(--accent-emerald);">ReliefChain AI Platform</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Emergency Triage</strong></td>
+                <td>Manual phone call logging, prone to delays and subjective prioritization.</td>
+                <td>Dual-layer Random Forest & rule-based DSS scoring in &lt;10ms.</td>
+              </tr>
+              <tr>
+                <td><strong>Supply Chain Planning</strong></td>
+                <td>Static estimates leading to severe food and water stockouts in high-demand zones.</td>
+                <td>Dynamic SPHERE standard forecasting with Resource Shortage Radar.</td>
+              </tr>
+              <tr>
+                <td><strong>Volunteer Dispatch</strong></td>
+                <td>Uncoordinated volunteer broadcasts without skill or proximity matching.</td>
+                <td>4-Factor weighted AI matching (distance, skills, capacity, reliability).</td>
+              </tr>
+              <tr>
+                <td><strong>Delivery Verification</strong></td>
+                <td>Paper receipts and unverifiable delivery sign-off sheets.</td>
+                <td>Single-use cryptographic QR code with GPS verification and token burning.</td>
+              </tr>
+              <tr>
+                <td><strong>Public Transparency</strong></td>
+                <td>Opaque annual charity reports with limited auditability.</td>
+                <td>SHA-256 immutable previous-hash ledger with public journey tracer.</td>
+              </tr>
+              <tr>
+                <td><strong>Real-Time Operations</strong></td>
+                <td>Fragmented radio and spreadsheet communication.</td>
+                <td>Live Incident Command Center with GeoJSON map and WebSocket stream.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: MISSION CONTROL DASHBOARD ==================== -->
+    <section id="tab-dashboard" class="tab-content">
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Emergency Operations & Mission Control</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Live triage state machine, mission lifecycle tracking, and real-time operations feed.</p>
         </div>
         <div style="display: flex; gap: 0.75rem;">
           <button class="btn btn-danger" onclick="openModal('sos-modal')">+ New SOS Request</button>
@@ -160,27 +823,538 @@
         </div>
       </div>
 
-      <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="font-size: 1.1rem; font-weight: 700;">🚨 Priority Emergency Queue (Decision Support Triage)</h3>
-          <button class="btn btn-sm btn-outline" onclick="switchTab('requests')">View All Requests →</button>
+      <!-- Live Mission Lifecycle Status Matrix -->
+      <div id="mission-lifecycle-counters" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 3px solid var(--accent-amber);">
+          <div id="mc-pending-count" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-amber);">--</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Pending</div>
         </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Location / Zone</th>
-                <th>Disaster</th>
-                <th>Affected</th>
-                <th>AI Priority</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="urgent-queue-table-body">
-              <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading priority queue...</td></tr>
-            </tbody>
-          </table>
+        <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 3px solid var(--accent-cyan);">
+          <div id="mc-triaged-count" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-cyan);">--</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Triaged</div>
+        </div>
+        <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 3px solid var(--accent-purple);">
+          <div id="mc-assigned-count" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-purple);">--</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Assigned</div>
+        </div>
+        <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 3px solid var(--accent-blue);">
+          <div id="mc-dispatched-count" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-blue);">--</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Dispatched</div>
+        </div>
+        <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 3px solid #38bdf8;">
+          <div id="mc-inprogress-count" style="font-size: 1.5rem; font-weight: 800; color: #38bdf8;">--</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">In Progress</div>
+        </div>
+        <div class="glass-panel" style="padding: 1rem; text-align: center; border-left: 3px solid var(--accent-emerald);">
+          <div id="mc-completed-count" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-emerald);">--</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Completed</div>
+        </div>
+      </div>
+
+      <!-- Main Operations Grid (Emergency Queue + Live Event Stream) -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left: Active Emergency Missions -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">🚨 Priority Mission Queue (AI Decision Support)</h3>
+            <button class="btn btn-sm btn-outline" onclick="switchTab('requests')">All Requests →</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Location / Zone</th>
+                  <th>Disaster</th>
+                  <th>Affected</th>
+                  <th>AI Priority</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="urgent-queue-table-body">
+                <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading priority queue...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: Live Operations Activity Stream -->
+        <div class="glass-panel" style="padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 700;">⚡ Live Operations Feed</h3>
+            <div class="pulse-dot"></div>
+          </div>
+          <div id="live-activity-stream" class="activity-stream">
+            <div style="text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 0.82rem;">Connecting to real-time events...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: AI INTELLIGENCE CENTER ==================== -->
+    <section id="tab-ai-intelligence" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🧠 AI Intelligence & Disaster Forecasting</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Predictive risk estimation, humanitarian resource demand forecasting, smart volunteer dispatch, and contingency simulation.
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.4rem 0.8rem; font-size: 0.78rem;">
+            ● 4 AI MODELS ONLINE
+          </span>
+          <button class="btn btn-outline btn-sm" onclick="loadAIIntelligenceTab()">↻ Refresh Models</button>
+        </div>
+      </div>
+
+      <!-- AI Navigation Sub-Tabs -->
+      <div class="glass-panel" style="padding: 0.6rem; margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <button id="ai-subtab-btn-risk" class="btn btn-primary btn-sm" onclick="switchAISubTab('risk')">🌐 Disaster Risk Predictor</button>
+        <button id="ai-subtab-btn-forecast" class="btn btn-outline btn-sm" onclick="switchAISubTab('forecast')">📦 Resource Demand Forecast</button>
+        <button id="ai-subtab-btn-volunteer" class="btn btn-outline btn-sm" onclick="switchAISubTab('volunteer')">🦺 Volunteer Smart Match</button>
+        <button id="ai-subtab-btn-sim" class="btn btn-outline btn-sm" onclick="switchAISubTab('sim')">🧪 Impact Simulator (Admin)</button>
+        <button id="ai-subtab-btn-models" class="btn btn-outline btn-sm" onclick="switchAISubTab('models')">🤖 AI Model Registry & Governance</button>
+      </div>
+
+      <!-- Sub-Tab 1: Disaster Risk Predictor -->
+      <div id="ai-subpanel-risk" class="ai-subpanel">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem;">
+          <!-- Left: Input Form -->
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Assess Environmental Hazard</h3>
+            <form id="ai-risk-predict-form" onsubmit="handleDisasterRiskPredict(event)">
+              <div class="form-group">
+                <label class="form-label">Disaster Hazard Type</label>
+                <select id="ai-risk-type" class="form-control" required>
+                  <option value="earthquake">Earthquake (Seismic Shock)</option>
+                  <option value="flood">Flood / River Overflow</option>
+                  <option value="cyclone">Cyclone / Storm Surge</option>
+                  <option value="tsunami">Tsunami Coastal Inundation</option>
+                  <option value="landslide">Landslide & Terrain Shift</option>
+                  <option value="wildfire">Wildfire Rapid Combustion</option>
+                  <option value="drought">Drought & Water Scarcity</option>
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Historical Severity (1-10)</label>
+                  <input id="ai-risk-severity" type="number" step="0.5" min="1" max="10" value="7.5" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Rainfall Forecast (mm)</label>
+                  <input id="ai-risk-rainfall" type="number" min="0" value="120" class="form-control" required />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Population Density (/km²)</label>
+                  <input id="ai-risk-density" type="number" min="10" value="1200" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Vulnerable Demographics (%)</label>
+                  <input id="ai-risk-vulnerable" type="number" min="0" max="100" value="25" class="form-control" required />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Infrastructure Risk (0.0 - 1.0)</label>
+                  <input id="ai-risk-infra" type="number" step="0.05" min="0" max="1" value="0.75" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Local Depot Stock (0.0 - 1.0)</label>
+                  <input id="ai-risk-cushion" type="number" step="0.05" min="0" max="1" value="0.40" class="form-control" required />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Target Incident Sector Name</label>
+                <input id="ai-risk-location" type="text" value="Metropolitan Coastal Sector 4" class="form-control" required />
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">⚡ Calculate Disaster Risk Score</button>
+            </form>
+          </div>
+
+          <!-- Right: Risk Prediction Output & XAI Breakdown -->
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.15rem; font-weight: 700;">Hybrid Risk Assessment Card</h3>
+              <span id="ai-risk-badge-tier" class="badge badge-warning" style="font-size: 0.85rem; padding: 0.35rem 0.75rem;">AWAITING INPUT</span>
+            </div>
+
+            <div id="ai-risk-output-empty" style="text-align: center; padding: 3.5rem 1.5rem; color: var(--text-muted);">
+              <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🌐</div>
+              <p>Configure environmental and demographic parameters and click <strong>Calculate Disaster Risk Score</strong> to generate hybrid DSS risk intelligence.</p>
+            </div>
+
+            <div id="ai-risk-output-results" style="display: none;">
+              <!-- Score Gauge & Confidence -->
+              <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.4); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="text-align: center; min-width: 90px;">
+                  <div id="ai-risk-score-num" style="font-size: 2.2rem; font-weight: 800; color: #EF4444; line-height: 1;">82.5</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Risk Score / 100</div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 0.35rem;">
+                    <span>Model Confidence:</span>
+                    <strong id="ai-risk-confidence-val">92%</strong>
+                  </div>
+                  <div style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="ai-risk-score-bar" style="height: 100%; width: 82%; background: linear-gradient(90deg, #F59E0B, #EF4444); border-radius: 4px;"></div>
+                  </div>
+                  <div id="ai-risk-summary-text" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    Risk score is primarily driven by: Extreme Rainfall, High Population Density, Infrastructure Fragility.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Explainable Factors -->
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem;">🔍 Feature Contribution Rationale (XAI)</h4>
+              <div id="ai-risk-factors-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;"></div>
+
+              <!-- Action Directives -->
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem;">📋 Recommended Operational Directives</h4>
+              <ul id="ai-risk-recommendations-list" style="font-size: 0.85rem; padding-left: 1.2rem; color: var(--text-main); margin-bottom: 1rem;"></ul>
+
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
+                ℹ Decision Support Disclaimer: ReliefChain AI Risk Predictor is an advisory decision support system. Ground coordinators must verify real-time situational observations.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 2: Resource Demand Forecast -->
+      <div id="ai-subpanel-forecast" class="ai-subpanel" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem;">
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Forecast Supply Requirements</h3>
+            <form id="ai-forecast-form" onsubmit="handleResourceForecast(event)">
+              <div class="form-group">
+                <label class="form-label">Disaster Hazard Type</label>
+                <select id="ai-fc-type" class="form-control" required>
+                  <option value="flood">Flood</option>
+                  <option value="earthquake">Earthquake</option>
+                  <option value="cyclone">Cyclone</option>
+                  <option value="tsunami">Tsunami</option>
+                  <option value="wildfire">Wildfire</option>
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Severity Index (1-10)</label>
+                  <input id="ai-fc-severity" type="number" step="0.5" min="1" max="10" value="8.0" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Population Affected</label>
+                  <input id="ai-fc-people" type="number" min="10" value="1500" class="form-control" required />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Forecast Horizon (Hours)</label>
+                  <select id="ai-fc-hours" class="form-control">
+                    <option value="24">24 Hours (Immediate)</option>
+                    <option value="48" selected>48 Hours (Sustained)</option>
+                    <option value="72">72 Hours (Extended)</option>
+                    <option value="168">7 Days (Macro)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Active SOS Intake Pressure</label>
+                  <input id="ai-fc-sos" type="number" min="0" value="35" class="form-control" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">📦 Generate Resource Demand Forecast</button>
+            </form>
+          </div>
+
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Supply Burn Rates vs Warehouse Reserves</h3>
+            <div id="ai-fc-output-empty" style="text-align: center; padding: 3.5rem 1.5rem; color: var(--text-muted);">
+              <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📦</div>
+              <p>Submit disaster parameters to project humanitarian supply consumption and warehouse inventory shortage gaps.</p>
+            </div>
+
+            <div id="ai-fc-output-results" style="display: none;">
+              <div class="table-container" style="margin-bottom: 1rem;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Supply Item</th>
+                      <th>Predicted Demand</th>
+                      <th>Warehouse Stock</th>
+                      <th>Inventory Shortage</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ai-fc-table-body"></tbody>
+                </table>
+              </div>
+
+              <div id="ai-fc-shortage-alert" class="alert alert-danger" style="display: none; margin-bottom: 1rem;"></div>
+
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem;">📋 Logistics Directives</h4>
+              <ul id="ai-fc-recommendations-list" style="font-size: 0.85rem; padding-left: 1.2rem; color: var(--text-main); margin-bottom: 1rem;"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 3: Volunteer Smart Match -->
+      <div id="ai-subpanel-volunteer" class="ai-subpanel" style="display: none;">
+        <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 700;">Smart Volunteer Dispatch Recommendation</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">Multi-criteria ranking based on distance proximity, skill affinity, workload capacity, and reliability score.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <select id="ai-vol-mission-select" class="form-control" style="min-width: 260px;">
+                <option value="">Select active mission...</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="fetchVolunteerSmartRecommendations()">Rank Volunteers</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="ai-vol-recommendations-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
+          <div class="glass-panel" style="padding: 2.5rem; text-align: center; color: var(--text-muted); grid-column: 1 / -1;">
+            Select an active mission above to view AI-ranked best-fit volunteer responder recommendations.
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 4: Impact Simulator (Admin) -->
+      <div id="ai-subpanel-sim" class="ai-subpanel" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem;">
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 style="font-size: 1.15rem; font-weight: 700;">Contingency Scenario Modeler</h3>
+              <span class="badge badge-primary" style="font-size: 0.72rem;">ADMIN ONLY</span>
+            </div>
+            <form id="ai-sim-form" onsubmit="handleDisasterSimulation(event)">
+              <div class="form-group">
+                <label class="form-label">Simulation Scenario Title</label>
+                <input id="ai-sim-title" type="text" value="Contingency Flash Flood Drill A" class="form-control" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Hypothetical Disaster Hazard</label>
+                <select id="ai-sim-type" class="form-control" required>
+                  <option value="earthquake">Earthquake (Magnitude 7.8)</option>
+                  <option value="flood" selected>Flood (Category 4 Surge)</option>
+                  <option value="tsunami">Tsunami (12m Coastal Wave)</option>
+                  <option value="cyclone">Cyclone (Category 5 Storm)</option>
+                </select>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Severity Level (1-10)</label>
+                  <input id="ai-sim-severity" type="number" step="0.5" min="1" max="10" value="8.5" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Affected Population</label>
+                  <input id="ai-sim-people" type="number" min="50" value="10000" class="form-control" required />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                  <label class="form-label">Duration (Hours)</label>
+                  <input id="ai-sim-duration" type="number" min="6" value="48" class="form-control" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Sector Name</label>
+                  <input id="ai-sim-location" type="text" value="Coastal Industrial Zone Beta" class="form-control" required />
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-danger" style="width: 100%; margin-top: 0.5rem;">🧪 Execute Impact Simulation & Seal Ledger</button>
+            </form>
+          </div>
+
+          <div class="glass-panel" style="padding: 1.5rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Simulated Macro Humanitarian Projections</h3>
+            <div id="ai-sim-output-empty" style="text-align: center; padding: 3.5rem 1.5rem; color: var(--text-muted);">
+              <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🧪</div>
+              <p>Configure hypothetical disaster parameters and execute simulation to calculate macro casualty, volunteer squad, and logistical burn projections.</p>
+            </div>
+
+            <div id="ai-sim-output-results" style="display: none;">
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+                <div style="background: rgba(15, 23, 42, 0.4); padding: 0.85rem; border-radius: 6px; text-align: center; border: 1px solid var(--border-color);">
+                  <div id="ai-sim-stat-sos" style="font-size: 1.4rem; font-weight: 800; color: #3B82F6;">450</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">Projected SOS Requests</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.4); padding: 0.85rem; border-radius: 6px; text-align: center; border: 1px solid var(--border-color);">
+                  <div id="ai-sim-stat-casualties" style="font-size: 1.4rem; font-weight: 800; color: #EF4444;">120</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">Estimated Casualties</div>
+                </div>
+                <div style="background: rgba(15, 23, 42, 0.4); padding: 0.85rem; border-radius: 6px; text-align: center; border: 1px solid var(--border-color);">
+                  <div id="ai-sim-stat-volunteers" style="font-size: 1.4rem; font-weight: 800; color: #10B981;">185</div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">Volunteers Needed</div>
+                </div>
+              </div>
+
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem;">🦺 Personnel Squad Mobilization</h4>
+              <div id="ai-sim-personnel-breakdown" style="font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-main);"></div>
+
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.6rem;">📋 Contingency Directives</h4>
+              <ul id="ai-sim-directives-list" style="font-size: 0.85rem; padding-left: 1.2rem; color: var(--text-main); margin-bottom: 1rem;"></ul>
+
+              <div id="ai-sim-ledger-box" style="background: rgba(16, 185, 129, 0.08); padding: 0.65rem 0.85rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 0.78rem; font-family: monospace;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-Tab 5: AI Model Registry & Governance -->
+      <div id="ai-subpanel-models" class="ai-subpanel" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 700;">AI Model Governance & Registry</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Catalog of verified machine learning models, training metadata, accuracy metrics, and hot-reload controls.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="handleReloadAIModel()">🔄 Hot-Reload Model Artifact</button>
+        </div>
+
+        <div id="ai-models-catalog-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB: INCIDENT COMMAND & DISASTER INTELLIGENCE ==================== -->
+    <section id="tab-command-center" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">🚨 Incident Command & Disaster Intelligence</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Real-time multi-hazard incident lifecycle, multi-factor escalation engine, situation reports (SITREPs), and sensor feed synchronization.
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            <select id="feed-sync-provider-select" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem; width: 160px;">
+              <option value="mock_provider">Mock Radar Feeds</option>
+              <option value="usgs_provider">USGS Earthquakes</option>
+              <option value="gdacs_provider">GDACS Multi-Hazard</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="handleFeedSyncTrigger()">⚡ Sync Feed</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('create-incident-modal')">➕ Declare Incident</button>
+          <button class="btn btn-danger btn-sm" onclick="handleBatchEscalationScan()">🔍 Escalation Scan</button>
+        </div>
+      </div>
+
+      <!-- Command Center KPI Metrics -->
+      <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Active Incidents</span>
+            <div class="card-icon" style="background: rgba(244, 63, 94, 0.15); color: var(--accent-rose);">⚠️</div>
+          </div>
+          <div id="cc-kpi-active" class="card-value">--</div>
+          <div class="card-subtitle">Verified & operational threats</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Critical Severity</span>
+            <div class="card-icon" style="background: rgba(239, 68, 68, 0.15); color: #EF4444;">🔥</div>
+          </div>
+          <div id="cc-kpi-critical" class="card-value">--</div>
+          <div class="card-subtitle">Severity ≥ 8.0 / Level 4</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Pending SOS Density</span>
+            <div class="card-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">📍</div>
+          </div>
+          <div id="cc-kpi-sos" class="card-value">--</div>
+          <div class="card-subtitle">Active distress calls in zones</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Volunteer Readiness</span>
+            <div class="card-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">🦺</div>
+          </div>
+          <div id="cc-kpi-volunteers" class="card-value">--</div>
+          <div class="card-subtitle">Deployable field responders</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Command Readiness</span>
+            <div class="card-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan);">🛡️</div>
+          </div>
+          <div id="cc-kpi-readiness" class="card-value" style="font-size: 1.1rem; color: var(--accent-cyan);">OPERATIONAL</div>
+          <div class="card-subtitle">Telemetry status verified</div>
+        </div>
+      </div>
+
+      <!-- Incident Filters Bar -->
+      <div class="glass-panel" style="padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;" id="incident-status-filter-pills">
+          <button class="btn btn-primary btn-sm incident-filter-pill active" onclick="filterIncidentsByStatus('')">All</button>
+          <button class="btn btn-outline btn-sm incident-filter-pill" onclick="filterIncidentsByStatus('DETECTED')">Detected</button>
+          <button class="btn btn-outline btn-sm incident-filter-pill" onclick="filterIncidentsByStatus('VERIFIED')">Verified</button>
+          <button class="btn btn-outline btn-sm incident-filter-pill" onclick="filterIncidentsByStatus('ACTIVE')">Active</button>
+          <button class="btn btn-outline btn-sm incident-filter-pill" onclick="filterIncidentsByStatus('MONITORING')">Monitoring</button>
+          <button class="btn btn-outline btn-sm incident-filter-pill" onclick="filterIncidentsByStatus('CONTAINED')">Contained</button>
+          <button class="btn btn-outline btn-sm incident-filter-pill" onclick="filterIncidentsByStatus('RESOLVED')">Resolved</button>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <input id="incident-search-input" type="text" placeholder="Search incident or zone..." class="form-control" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; width: 220px;" oninput="handleIncidentSearch(this.value)" />
+          <button class="btn btn-outline btn-sm" onclick="loadCommandCenter()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Operations Grid: Incidents List + SITREPs & Timeline Activity -->
+      <div style="display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <!-- Left: Incident Command Cards -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Active Disaster Incidents</h3>
+            <span id="cc-incidents-count-badge" class="badge badge-primary" style="font-size: 0.75rem;">0 INCIDENTS</span>
+          </div>
+          <div id="cc-incidents-cards-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
+            <div style="text-align: center; padding: 3rem; color: var(--text-muted); grid-column: 1/-1;">Loading active disaster incidents...</div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time SITREPs & Timeline Stream -->
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          <!-- Quick SITREP Submission & Stream -->
+          <div class="glass-panel" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700;">📋 Field Situation Reports (SITREPs)</h3>
+              <button class="btn btn-outline btn-sm" style="font-size: 0.72rem;" onclick="openModal('create-sitrep-modal')">+ File SITREP</button>
+            </div>
+            <div id="cc-sitreps-stream" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem;">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 0.8rem;">Loading field situation reports...</div>
+            </div>
+          </div>
+
+          <!-- Incident Timeline Audit Stream -->
+          <div class="glass-panel" style="padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h3 style="font-size: 1.05rem; font-weight: 700;">⏱️ Command Activity Log</h3>
+              <div class="pulse-dot"></div>
+            </div>
+            <div id="cc-timeline-stream" class="activity-stream" style="max-height: 300px; overflow-y: auto;">
+              <div style="text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 0.8rem;">Loading timeline events...</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -384,6 +1558,70 @@
           <span class="badge badge-sm badge-status-assigned">Operations</span>
         </div>
         <div id="chart-status" class="chart-container"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 8: GEOSPATIAL DISASTER MAP ==================== -->
+    <section id="tab-geomap" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Geospatial Disaster Command Map</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Live GIS clustering, incident hot-zones, and volunteer dispatch proximity.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <button class="btn btn-outline" onclick="loadGeospatialMap()">🔄 Refresh Map Data</button>
+          <button class="btn btn-danger" onclick="openModal('sos-modal')">🚨 Report Incident</button>
+        </div>
+      </div>
+
+      <!-- Map Hotspots Metric Badges -->
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+        <div class="stat-card">
+          <div class="stat-label">Active Hotspots</div>
+          <div id="map-hotspots-count" class="stat-value" style="color: var(--accent-rose);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">High-Hazard Clusters</div>
+          <div id="map-critical-clusters" class="stat-value" style="color: var(--accent-amber);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Field Missions</div>
+          <div id="map-active-missions" class="stat-value" style="color: var(--accent-cyan);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Stranded Citizens</div>
+          <div id="map-total-affected" class="stat-value" style="color: var(--accent-emerald);">0</div>
+        </div>
+      </div>
+
+      <!-- Interactive Map Frame -->
+      <div class="chart-card" style="padding: 0; overflow: hidden; margin-bottom: 2rem;">
+        <div id="disaster-leaflet-map" style="height: 520px; width: 100%; z-index: 10;"></div>
+      </div>
+
+      <!-- Hotspot Clusters Table -->
+      <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1.2rem; font-weight: 700;">Identified Proximity Hotspots</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Algorithmic spatial clusters grouped within 25km proximity radius.</p>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Zone / Sector</th>
+              <th>Disaster Type</th>
+              <th>Hazard Rating</th>
+              <th>Incidents</th>
+              <th>Critical SOS</th>
+              <th>Affected People</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="map-hotspots-table-body">
+            <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading GIS hotspots...</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -629,8 +1867,287 @@
     </div>
   </div>
 
+  <!-- Mission Status Update Modal -->
+  <div id="mission-status-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Update Mission Lifecycle Status</h3>
+        <button class="modal-close" onclick="closeModal('mission-status-modal')">&times;</button>
+      </div>
+      <form id="mission-status-form" onsubmit="handleMissionStatusSubmit(event)">
+        <input type="hidden" id="mission-status-req-id" />
+        <div class="form-group">
+          <label class="form-label">New Lifecycle Status</label>
+          <select id="mission-new-status-select" class="form-control" required>
+            <option value="triaged">Triaged (AI Verified)</option>
+            <option value="assigned">Assigned to Organization</option>
+            <option value="dispatched">Dispatched from Warehouse</option>
+            <option value="in_progress">In Progress (Field Delivery)</option>
+            <option value="delivered">Delivered to Location</option>
+            <option value="completed">Completed & Verified</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Operational Log Note (Optional)</label>
+          <textarea id="mission-status-note" class="form-control" rows="2" placeholder="e.g. Dispatched 2x medical crates from Central Depot with convoy #4..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Commit Mission Transition</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mission Lifecycle History Stepper Modal -->
+  <div id="mission-history-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Mission Execution Lifecycle History</h3>
+        <button class="modal-close" onclick="closeModal('mission-history-modal')">&times;</button>
+      </div>
+      <div id="mission-history-stepper-body" style="max-height: 420px; overflow-y: auto; padding: 0.5rem 0;">
+        <p style="text-align: center; color: var(--text-muted);">Loading mission execution history...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Incident Modal -->
+  <div id="create-incident-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--accent-rose);">🚨 Declare Disaster Incident</h3>
+        <button class="modal-close" onclick="closeModal('create-incident-modal')">&times;</button>
+      </div>
+      <form id="create-incident-form" onsubmit="handleCreateIncidentSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Incident Operation Title</label>
+          <input id="new-incident-title" type="text" placeholder="e.g. Flash Flood Surge - Valley Sector" class="form-control" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Disaster Hazard Type</label>
+            <select id="new-incident-type" class="form-control" required>
+              <option value="flood">Flood</option>
+              <option value="earthquake">Earthquake</option>
+              <option value="cyclone">Cyclone</option>
+              <option value="wildfire">Wildfire</option>
+              <option value="tsunami">Tsunami</option>
+              <option value="landslide">Landslide</option>
+              <option value="storm">Severe Storm</option>
+              <option value="other">Other Multi-Hazard</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Initial Severity Rating (1.0 - 10.0)</label>
+            <input id="new-incident-severity" type="number" step="0.1" min="1.0" max="10.0" value="6.5" class="form-control" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Latitude</label>
+            <input id="new-incident-lat" type="number" step="0.0001" value="28.6139" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Longitude</label>
+            <input id="new-incident-lng" type="number" step="0.0001" value="77.2090" class="form-control" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated Impact Radius (km)</label>
+          <input id="new-incident-radius" type="number" step="0.5" min="1.0" max="500.0" value="25.0" class="form-control" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Operational Situation Brief</label>
+          <textarea id="new-incident-desc" class="form-control" rows="3" placeholder="Brief situational overview, affected infrastructure, initial field reports..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger" style="width: 100%;">🚨 Broadcast & Activate Incident</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Incident Detail & Interactive Lifecycle Stepper Modal -->
+  <div id="incident-detail-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <div>
+          <h3 id="incident-modal-title" class="modal-title">Incident Command Details</h3>
+          <div id="incident-modal-subtitle" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">ID: --</div>
+        </div>
+        <button class="modal-close" onclick="closeModal('incident-detail-modal')">&times;</button>
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;" id="incident-action-buttons-container">
+        <!-- Interactive Lifecycle Actions Injected Dynamically -->
+      </div>
+
+      <!-- Escalation Analysis Meter -->
+      <div id="incident-escalation-banner" style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-rose);">Operational Escalation Assessment</span>
+          <span id="incident-modal-escalation-badge" class="badge badge-primary">LEVEL_1_NORMAL</span>
+        </div>
+        <div id="incident-modal-escalation-reasons" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem;">
+          Evaluating real-time indicators...
+        </div>
+      </div>
+
+      <!-- Tabs inside modal: Timeline / SITREPs / Impact Zone -->
+      <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+        <button id="inc-submodal-btn-timeline" class="btn btn-sm btn-primary" onclick="switchIncidentModalTab('timeline')">⏱️ Timeline Activity</button>
+        <button id="inc-submodal-btn-sitreps" class="btn btn-sm btn-outline" onclick="switchIncidentModalTab('sitreps')">📋 Situation Reports</button>
+        <button id="inc-submodal-btn-zone" class="btn btn-sm btn-outline" onclick="switchIncidentModalTab('zone')">🌐 Impact Zone Analysis</button>
+      </div>
+
+      <div id="inc-submodal-view-timeline" style="max-height: 340px; overflow-y: auto;">
+        <div id="incident-modal-timeline-body" class="activity-stream">
+          <p style="text-align: center; color: var(--text-muted);">Loading timeline events...</p>
+        </div>
+      </div>
+
+      <div id="inc-submodal-view-sitreps" style="display: none; max-height: 340px; overflow-y: auto;">
+        <div id="incident-modal-sitreps-body" style="display: flex; flex-direction: column; gap: 0.6rem;">
+          <p style="text-align: center; color: var(--text-muted);">Loading SITREPs...</p>
+        </div>
+      </div>
+
+      <div id="inc-submodal-view-zone" style="display: none; max-height: 340px; overflow-y: auto;">
+        <div id="incident-modal-zone-body" style="padding: 0.5rem;">
+          <p style="text-align: center; color: var(--text-muted);">Loading impact zone metrics...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Situation Report (SITREP) Modal -->
+  <div id="create-sitrep-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 Submit Field Situation Report (SITREP)</h3>
+        <button class="modal-close" onclick="closeModal('create-sitrep-modal')">&times;</button>
+      </div>
+      <form id="create-sitrep-form" onsubmit="handleCreateSitrepSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Select Target Disaster Incident</label>
+          <select id="sitrep-incident-select" class="form-control" required>
+            <option value="">Select an active incident...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Report Category</label>
+          <select id="sitrep-report-type" class="form-control" required>
+            <option value="field">Field Reconnaissance</option>
+            <option value="medical">Medical & Triage Assessment</option>
+            <option value="logistics">Logistics & Supply Line</option>
+            <option value="infrastructure">Infrastructure & Bridge Damage</option>
+            <option value="containment">Containment Perimeter Status</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Casualties Reported</label>
+            <input id="sitrep-casualties" type="number" min="0" value="0" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">People Displaced</label>
+            <input id="sitrep-displaced" type="number" min="0" value="0" class="form-control" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Infrastructure Damage Level</label>
+          <select id="sitrep-damage-level" class="form-control" required>
+            <option value="minimal">Minimal / Functional</option>
+            <option value="moderate" selected>Moderate (Roads Blocked)</option>
+            <option value="severe">Severe (Power & Water Grid Down)</option>
+            <option value="catastrophic">Catastrophic (Total Destruction)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Operational Field Summary</label>
+          <textarea id="sitrep-summary" class="form-control" rows="3" placeholder="Key observations, frontline squad needs, hazard perimeter..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Commit Situation Report</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- One-Tap Emergency SOS Modal (with Instant AI Priority Triage Preview) -->
+  <div id="one-tap-sos-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 520px; border-top: 4px solid var(--accent-rose);">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--accent-rose);">🚨 One-Tap Emergency SOS</h3>
+        <button class="modal-close" onclick="closeModal('one-tap-sos-modal')">&times;</button>
+      </div>
+
+      <form id="one-tap-sos-form" onsubmit="handleOneTapSosSubmit(event)">
+        <!-- Live AI Triage Feedback Banner -->
+        <div id="sos-live-triage-card" style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Instant AI Priority Forecast:</span>
+            <span id="quick-triage-badge" class="badge badge-danger">CRITICAL (Score: 85/100)</span>
+          </div>
+          <p id="quick-triage-reason" style="font-size: 0.8rem; color: var(--text-main); margin-top: 0.35rem; line-height: 1.4;">
+            Medical trauma and high person count triggers immediate Priority 1 queueing.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Disaster Hazard Type</label>
+          <select id="quick-disaster-type" class="form-control" onchange="updateLiveTriagePreview()" required>
+            <option value="flood" selected>Flood / Cyclone Inundation</option>
+            <option value="earthquake">Earthquake / Structural Collapse</option>
+            <option value="wildfire">Wildfire / Heat Hazard</option>
+            <option value="landslide">Landslide / Mudflow</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between;">
+            <label class="form-label">People in Immediate Danger</label>
+            <span id="quick-people-val" style="font-weight: 800; color: var(--accent-rose);">4 Persons</span>
+          </div>
+          <input id="quick-people-slider" type="range" min="1" max="25" value="4" class="form-control" oninput="document.getElementById('quick-people-val').textContent = this.value + ' Persons'; updateLiveTriagePreview();" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Critical Supplies & Support Needed</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem;">
+            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+              <input type="checkbox" id="quick-need-medical" checked onchange="updateLiveTriagePreview()" /> 🩺 Medical / First Aid
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+              <input type="checkbox" id="quick-need-water" checked onchange="updateLiveTriagePreview()" /> 💧 Potable Water
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+              <input type="checkbox" id="quick-need-food" checked onchange="updateLiveTriagePreview()" /> 🍞 Emergency Food
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+              <input type="checkbox" id="quick-need-shelter" onchange="updateLiveTriagePreview()" /> ⛺ Shelter / Evacuation
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">GPS Latitude / Longitude</label>
+          <div class="form-row">
+            <input id="quick-lat" type="number" step="any" class="form-control" value="19.0760" placeholder="Latitude" required />
+            <input id="quick-lng" type="number" step="any" class="form-control" value="72.8777" placeholder="Longitude" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Brief Situation / Landmark</label>
+          <input id="quick-desc" type="text" class="form-control" value="Trapped on terrace with elderly family, rising flood waters." required />
+        </div>
+
+        <button type="submit" class="btn btn-danger" style="width: 100%; font-size: 1rem; font-weight: 800; padding: 0.75rem;">
+          🚨 DISPATCH IMMEDIATE SOS DISTRESS
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Auth Modal -->
   <div id="auth-modal" class="modal-overlay">
+
     <div class="modal-card" style="max-width: 480px;">
       <div class="modal-header">
         <h3 class="modal-title">Account Access & Role Switcher</h3>
@@ -655,7 +2172,18 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then((reg) => console.log('[PWA] ServiceWorker registered scope:', reg.scope))
+          .catch((err) => console.warn('[PWA] ServiceWorker registration failed:', err));
+      });
+    }
+  </script>
 </body>
 </html>

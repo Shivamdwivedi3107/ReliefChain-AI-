@@ -1,27 +1,23 @@
-# Environments & Virtual Envs
+# Environments & Secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 venv/
 .venv/
 env/
 ENV/
 env.bak/
 venv.bak/
+secrets/
+uploads/
 
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / Python Cache
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-# C extensions
-*.obj
-*.o
-*.a
-*.lib
-
-# Distribution / packaging
+# Distribution & Build Artifacts
 dist/
 build/
 *.egg-info/
@@ -37,15 +33,20 @@ nosetests.xml
 coverage.xml
 *.cover
 
-# Database & SQLite files
+# Databases, Backups & Dumps
 *.db
 *.sqlite
 *.sqlite3
 reliefchain.db
 *.db-journal
 *.sqlite3-journal
+*.bak
+backups/*.db
+backups/*.sql.gz
+backups/*.sha256
+!backups/backup.py
 
-# IDEs & Editors
+# IDEs & OS Temporary Files
 .vscode/
 .idea/
 *.swp
@@ -54,7 +55,7 @@ reliefchain.db
 .DS_Store
 Thumbs.db
 
-# Blockchain / Hardhat / Node
+# Blockchain & Node Dependencies
 node_modules/
 artifacts/
 cache/

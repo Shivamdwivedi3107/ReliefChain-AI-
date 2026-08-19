@@ -4,6 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.rate_limit import rate_limit_dependency
 from app.database import get_db
 from app.dependencies import get_current_active_user
 from app.models.qr_verification import QRVerification
@@ -108,7 +110,12 @@ def verify_token_get(
     )
 
 
-@router.post("/confirm", response_model=QRVerifyResponse, summary="Field Volunteer confirms delivery via QR scan and GPS coordinates")
+@router.post(
+    "/confirm",
+    response_model=QRVerifyResponse,
+    dependencies=[Depends(rate_limit_dependency(max_requests=settings.RATE_LIMIT_QR_PER_MINUTE, window_seconds=60))],
+    summary="Field Volunteer confirms delivery via QR scan and GPS coordinates",
+)
 def confirm_delivery_qr(
     payload: QRVerifyRequest,
     current_user: User = Depends(get_current_active_user),

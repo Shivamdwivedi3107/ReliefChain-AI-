@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.rate_limit import rate_limit_dependency
 from app.dependencies import get_db, get_current_active_user
 from app.models.user import User
 from app.models.organization import Organization
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     "/register",
     response_model=UserOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit_dependency(max_requests=settings.RATE_LIMIT_REGISTER_PER_MINUTE, window_seconds=60))],
     summary="Register a new citizen, volunteer, NGO member or administrator",
 )
 def register_user(
@@ -74,6 +76,7 @@ def register_user(
 @router.post(
     "/login",
     response_model=Token,
+    dependencies=[Depends(rate_limit_dependency(max_requests=settings.RATE_LIMIT_LOGIN_PER_MINUTE, window_seconds=60))],
     summary="Login to obtain a JWT Bearer token",
 )
 def login_user(

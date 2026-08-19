@@ -1,0 +1,57 @@
+{
+  "name": "ReliefChain AI — Intelligent Humanitarian Disaster Coordination",
+  "short_name": "ReliefChain AI",
+  "description": "Production-Grade AI Emergency Triage, SPHERE Resource Forecasting, Single-Use QR Proof-of-Delivery, and Immutable Transparency Ledger",
+  "start_url": "/ui/",
+  "scope": "/ui/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#070a12",
+  "theme_color": "#3B82F6",
+  "categories": ["humanitarian", "emergency", "utilities", "productivity"],
+  "shortcuts": [
+    {
+      "name": "One-Tap Emergency SOS",
+      "short_name": "Emergency SOS",
+      "description": "Instant distress call dispatch with real-time AI triage score preview",
+      "url": "/ui/#sos",
+      "icons": [{ "src": "/ui/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Citizen Emergency Hub",
+      "short_name": "Citizen Hub",
+      "description": "Safe shelter locator and personal relief request tracker",
+      "url": "/ui/#citizen",
+      "icons": [{ "src": "/ui/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Volunteer Operations",
+      "short_name": "Volunteer Ops",
+      "description": "4-factor AI mission recommendations and delivery QR verification",
+      "url": "/ui/#volunteer",
+      "icons": [{ "src": "/ui/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI Disaster Copilot",
+      "short_name": "AI Copilot",
+      "description": "Natural language emergency command reasoning assistant",
+      "url": "/ui/#copilot",
+      "icons": [{ "src": "/ui/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/ui/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/ui/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ class ReliefRequestBase(BaseSchema):
     latitude: float
     longitude: float
     affected_people: int = Field(default=1, ge=1)
-    required_resources: List[Dict[str, Any]] = Field(default_factory=list)
+    required_resources: List[Any] = Field(default_factory=list)
     urgency_description: Optional[str] = None
     image_reference: Optional[str] = None
     disaster_id: Optional[str] = None

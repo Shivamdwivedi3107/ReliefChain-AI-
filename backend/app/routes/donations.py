@@ -78,23 +78,24 @@ def create_donation(
     db.refresh(donation)
 
     # Compute SHA-256 cryptographic record hash
-    donation.record_hash = generate_donation_record_hash(donation)
+    rec_hash = generate_donation_record_hash(donation)
+    setattr(donation, "record_hash", rec_hash)
 
     # Link to transparency ledger / blockchain
     latest_tx = db.query(BlockchainTransaction).order_by(BlockchainTransaction.created_at.desc()).first()
     prev_hash = latest_tx.current_hash if latest_tx else "0000000000000000000000000000000000000000000000000000000000000000"
     tx_hash, block_num, tx_status = blockchain_service.record_hash_on_chain(
-        record_hash=donation.record_hash,
+        record_hash=rec_hash,
         event_type="donation",
-        reference_id=donation.id,
+        reference_id=str(donation.id),
         previous_hash=prev_hash,
     )
-    donation.blockchain_tx_hash = tx_hash
+    setattr(donation, "blockchain_tx_hash", tx_hash)
 
     bc_tx = BlockchainTransaction(
         event_type="donation",
-        reference_id=donation.id,
-        record_hash=donation.record_hash,
+        reference_id=str(donation.id),
+        record_hash=rec_hash,
         previous_hash=prev_hash,
         tx_hash=tx_hash,
         block_number=block_num,
@@ -192,7 +193,8 @@ def update_donation(
         setattr(donation, k, v)
 
     # Re-calculate hash on state update
-    donation.record_hash = generate_donation_record_hash(donation)
+    rec_hash = generate_donation_record_hash(donation)
+    setattr(donation, "record_hash", rec_hash)
     db.commit()
     db.refresh(donation)
     return donation

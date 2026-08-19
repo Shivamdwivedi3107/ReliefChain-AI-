@@ -31,6 +31,78 @@ from app.services.blockchain_service import blockchain_service
 def seed_database():
     print("=== Initializing ReliefChain AI Database Schema & Seed Data ===")
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight automatic schema sync for SQLite development databases
+    if engine.dialect.name == "sqlite":
+        try:
+            with engine.connect() as conn:
+                raw_conn = conn.connection
+                cursor = raw_conn.cursor()
+                # Ensure users table columns
+                user_cols = [row[1] for row in cursor.execute('PRAGMA table_info("users")').fetchall()]
+                if user_cols:
+                    if "availability" not in user_cols:
+                        cursor.execute('ALTER TABLE "users" ADD COLUMN availability BOOLEAN DEFAULT 1')
+                    if "current_latitude" not in user_cols:
+                        cursor.execute('ALTER TABLE "users" ADD COLUMN current_latitude FLOAT')
+                    if "current_longitude" not in user_cols:
+                        cursor.execute('ALTER TABLE "users" ADD COLUMN current_longitude FLOAT')
+                    if "skills" not in user_cols:
+                        cursor.execute('ALTER TABLE "users" ADD COLUMN skills JSON')
+                    if "max_mission_capacity" not in user_cols:
+                        cursor.execute('ALTER TABLE "users" ADD COLUMN max_mission_capacity INTEGER DEFAULT 3')
+                    if "reliability_score" not in user_cols:
+                        cursor.execute('ALTER TABLE "users" ADD COLUMN reliability_score FLOAT DEFAULT 0.95')
+
+                # Ensure relief_requests columns
+                rr_cols = [row[1] for row in cursor.execute('PRAGMA table_info("relief_requests")').fetchall()]
+                if rr_cols:
+                    if "is_simulated" not in rr_cols:
+                        cursor.execute('ALTER TABLE "relief_requests" ADD COLUMN is_simulated BOOLEAN DEFAULT 0')
+                    if "ai_predicted_priority" not in rr_cols:
+                        cursor.execute('ALTER TABLE "relief_requests" ADD COLUMN ai_predicted_priority VARCHAR(30)')
+                    if "ai_confidence" not in rr_cols:
+                        cursor.execute('ALTER TABLE "relief_requests" ADD COLUMN ai_confidence FLOAT')
+                    if "ai_factors" not in rr_cols:
+                        cursor.execute('ALTER TABLE "relief_requests" ADD COLUMN ai_factors JSON')
+
+                # Ensure donations columns
+                don_cols = [row[1] for row in cursor.execute('PRAGMA table_info("donations")').fetchall()]
+                if don_cols:
+                    if "record_hash" not in don_cols:
+                        cursor.execute('ALTER TABLE "donations" ADD COLUMN record_hash VARCHAR(64)')
+                    if "blockchain_tx_hash" not in don_cols:
+                        cursor.execute('ALTER TABLE "donations" ADD COLUMN blockchain_tx_hash VARCHAR(66)')
+
+                # Ensure incidents columns
+                inc_cols = [row[1] for row in cursor.execute('PRAGMA table_info("incidents")').fetchall()]
+                if inc_cols:
+                    if "escalation_level" not in inc_cols:
+                        cursor.execute('ALTER TABLE "incidents" ADD COLUMN escalation_level VARCHAR(30) DEFAULT "LEVEL_1_ROUTINE"')
+                    if "affected_radius_km" not in inc_cols:
+                        cursor.execute('ALTER TABLE "incidents" ADD COLUMN affected_radius_km FLOAT DEFAULT 10.0')
+
+                # Ensure notifications columns
+                notif_cols = [row[1] for row in cursor.execute('PRAGMA table_info("notifications")').fetchall()]
+                if notif_cols:
+                    if "category" not in notif_cols:
+                        cursor.execute('ALTER TABLE "notifications" ADD COLUMN category VARCHAR(50) DEFAULT "general"')
+                    if "priority" not in notif_cols:
+                        cursor.execute('ALTER TABLE "notifications" ADD COLUMN priority VARCHAR(30) DEFAULT "normal"')
+                    if "severity" not in notif_cols:
+                        cursor.execute('ALTER TABLE "notifications" ADD COLUMN severity VARCHAR(30) DEFAULT "info"')
+                    if "is_archived" not in notif_cols:
+                        cursor.execute('ALTER TABLE "notifications" ADD COLUMN is_archived BOOLEAN DEFAULT 0')
+                    if "reference_id" not in notif_cols:
+                        cursor.execute('ALTER TABLE "notifications" ADD COLUMN reference_id VARCHAR(36)')
+                    if "reference_type" not in notif_cols:
+                        cursor.execute('ALTER TABLE "notifications" ADD COLUMN reference_type VARCHAR(50)')
+
+                raw_conn.commit()
+                cursor.close()
+        except Exception as e:
+            print(f"Notice: SQLite auto-sync check: {e}")
+
     db = SessionLocal()
 
     try:

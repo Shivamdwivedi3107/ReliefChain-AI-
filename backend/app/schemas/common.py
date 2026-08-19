@@ -18,6 +18,8 @@ class StandardResponse(BaseModel, Generic[T]):
 class PaginatedResponse(BaseModel, Generic[T]):
     success: bool = True
     total: int
-    page: int
-    page_size: int
+    page: int = 1
+    page_size: int = 10
+    limit: Optional[int] = None
+    offset: Optional[int] = None
     data: List[T]

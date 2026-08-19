@@ -104,6 +104,8 @@ def create_relief_request(
 def list_relief_requests(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Optional page limit (takes precedence over page_size)"),
+    offset: Optional[int] = Query(None, ge=0, description="Optional offset (takes precedence over page)"),
     status: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
     disaster_type: Optional[str] = Query(None),
@@ -148,17 +150,24 @@ def list_relief_requests(
     else:
         query = query.order_by(ReliefRequest.created_at.desc())
 
+    # Determine pagination offsets and limits
+    effective_limit = limit if limit is not None else page_size
+    effective_offset = offset if offset is not None else (page - 1) * page_size
+    effective_page = (effective_offset // effective_limit) + 1 if effective_limit > 0 else 1
+
     items = (
-        query.offset((page - 1) * page_size)
-        .limit(page_size)
+        query.offset(effective_offset)
+        .limit(effective_limit)
         .all()
     )
 
     return PaginatedResponse(
         success=True,
         total=total,
-        page=page,
-        page_size=page_size,
+        page=effective_page,
+        page_size=effective_limit,
+        limit=effective_limit,
+        offset=effective_offset,
         data=items,
     )
 

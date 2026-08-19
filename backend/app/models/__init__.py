@@ -11,6 +11,21 @@ from app.models.blockchain import BlockchainTransaction
 from app.models.qr_verification import QRVerification
 from app.models.prediction import PredictionHistory
 from app.models.notification import Notification
+from app.models.mission_history import MissionStatusHistory
+from app.models.audit_log import AuditLog
+from app.models.evidence import Evidence
+from app.models.ai_models import (
+    AIModelRegistryEntry,
+    DisasterRiskPredictionRecord,
+    ResourceForecastRecord,
+    DisasterSimulationRecord,
+)
+from app.models.incidents import (
+    DisasterEvent,
+    Incident,
+    IncidentTimeline,
+    SituationReport,
+)
 
 __all__ = [
     "Base",
@@ -29,4 +44,15 @@ __all__ = [
     "QRVerification",
     "PredictionHistory",
     "Notification",
+    "MissionStatusHistory",
+    "AuditLog",
+    "Evidence",
+    "AIModelRegistryEntry",
+    "DisasterRiskPredictionRecord",
+    "ResourceForecastRecord",
+    "DisasterSimulationRecord",
+    "DisasterEvent",
+    "Incident",
+    "IncidentTimeline",
+    "SituationReport",
 ]

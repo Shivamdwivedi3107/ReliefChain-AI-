@@ -17,6 +17,8 @@ from app.schemas.resource import (
     InventoryOut,
 )
 from app.schemas.common import PaginatedResponse
+from app.services.audit_service import audit_service
+from app.services.notification_service import notification_manager
 
 router = APIRouter(prefix="/resources", tags=["Resources & Warehouse Inventory"])
 
@@ -42,6 +44,16 @@ def create_resource(
     db.add(resource)
     db.commit()
     db.refresh(resource)
+
+    audit_service.log_action(
+        db=db,
+        action="resource_created",
+        entity_type="resource",
+        entity_id=resource.id,
+        user_id=current_user.id,
+        details={"name": resource.name, "category": resource.category},
+    )
+
     return resource
 
 
@@ -110,6 +122,16 @@ def add_inventory(
 
     db.commit()
     db.refresh(inv)
+
+    audit_service.log_action(
+        db=db,
+        action="inventory_replenished",
+        entity_type="resource_inventory",
+        entity_id=inv.id,
+        user_id=current_user.id,
+        details={"resource_id": inv.resource_id, "quantity_added": payload.quantity, "available": inv.available_quantity},
+    )
+
     return inv
 
 
@@ -162,6 +184,16 @@ def update_inventory(
 
     db.commit()
     db.refresh(inv)
+
+    audit_service.log_action(
+        db=db,
+        action="inventory_updated",
+        entity_type="resource_inventory",
+        entity_id=inv.id,
+        user_id=current_user.id,
+        details={"available": inv.available_quantity, "reserved": inv.reserved_quantity, "total": inv.total_quantity},
+    )
+
     return inv
 
 

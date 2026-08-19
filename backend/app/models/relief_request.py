@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, Text, ForeignKey, JSON
+from sqlalchemy import Column, String, Integer, Float, Text, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.base import TimestampMixin, generate_uuid
@@ -22,6 +22,7 @@ class ReliefRequest(Base, TimestampMixin):
     # Priority & Status
     priority = Column(String(30), nullable=False, default="medium", index=True)  # low, medium, high, critical
     status = Column(String(30), nullable=False, default="pending", index=True)  # pending, under_review, assigned, in_progress, completed, rejected
+    is_simulated = Column(Boolean, default=False, nullable=False, index=True)
 
     # Assignments
     assigned_organization_id = Column(String(36), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -39,3 +40,4 @@ class ReliefRequest(Base, TimestampMixin):
     assigned_organization = relationship("Organization", back_populates="assigned_requests")
     distributions = relationship("Distribution", back_populates="relief_request", cascade="all, delete-orphan")
     prediction_records = relationship("PredictionHistory", back_populates="relief_request")
+    status_history = relationship("MissionStatusHistory", back_populates="relief_request", cascade="all, delete-orphan", order_by="desc(MissionStatusHistory.created_at)")
