@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReliefChain AI — Intelligent Disaster Response & Blockchain Transparency</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="brand" onclick="switchTab('landing')">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#041226" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <span>ReliefChain <span class="highlight">AI</span></span>
+    </div>
+
+    <ul class="nav-links">
+      <li class="nav-item active" data-tab="landing" onclick="switchTab('landing')">Overview</li>
+      <li class="nav-item" data-tab="dashboard" onclick="switchTab('dashboard')">Mission Control</li>
+      <li class="nav-item" data-tab="requests" onclick="switchTab('requests')">Relief Requests</li>
+      <li class="nav-item" data-tab="resources" onclick="switchTab('resources')">Inventory Depot</li>
+      <li class="nav-item" data-tab="distributions" onclick="switchTab('distributions')">Distributions & QR</li>
+      <li class="nav-item" data-tab="ledger" onclick="switchTab('ledger')">Transparency Ledger</li>
+      <li class="nav-item" data-tab="analytics" onclick="switchTab('analytics')">Analytics</li>
+    </ul>
+
+    <div class="nav-actions">
+      <div class="live-pill">
+        <div class="pulse-dot"></div>
+        <span>LEDGER ACTIVE</span>
+      </div>
+      <button id="nav-auth-btn" class="btn btn-sm btn-primary" onclick="openModal('auth-modal')">Sign In</button>
+      <div id="nav-user-profile" style="display: none; align-items: center; gap: 0.75rem;"></div>
+    </div>
+  </header>
+
+  <!-- Main Application Container -->
+  <main class="container">
+    
+    <!-- ==================== TAB 1: LANDING & OVERVIEW ==================== -->
+    <section id="tab-landing" class="tab-content active">
+      <div class="hero">
+        <div class="hero-badge">
+          <span>⚡ AI Triage Decision Support & Merkle-Linked Transparency</span>
+        </div>
+        <h1 class="hero-title">
+          Intelligent, Verifiable<br />
+          <span>Disaster Relief Coordination</span>
+        </h1>
+        <p class="hero-subtitle">
+          Accelerating emergency aid routing through AI-driven triage scoring, warehouse inventory lock-in, and tamper-evident QR proof-of-delivery on a cryptographic audit ledger.
+        </p>
+        <div class="hero-cta">
+          <button class="btn btn-danger" style="font-size: 1rem; padding: 0.8rem 1.75rem;" onclick="openModal('sos-modal')">
+            🚨 Submit SOS Relief Request
+          </button>
+          <button class="btn btn-primary" style="font-size: 1rem; padding: 0.8rem 1.75rem;" onclick="openModal('donate-modal')">
+            💙 Donate Aid Supplies
+          </button>
+          <button class="btn btn-outline" style="font-size: 1rem; padding: 0.8rem 1.75rem;" onclick="switchTab('dashboard')">
+            Launch Mission Control →
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Global Impact Matrix -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Total Requests</span>
+            <div class="card-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan);">📋</div>
+          </div>
+          <div id="kpi-total-requests" class="card-value">--</div>
+          <div class="card-subtitle">Citizen SOS emergency intakes</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Critical Triage</span>
+            <div class="card-icon" style="background: rgba(244, 63, 94, 0.15); color: var(--accent-rose);">⚠️</div>
+          </div>
+          <div id="kpi-critical-requests" class="card-value">--</div>
+          <div class="card-subtitle">Severe & trauma priorities</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Depot Supplies</span>
+            <div class="card-icon" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">📦</div>
+          </div>
+          <div id="kpi-inventory-items" class="card-value">--</div>
+          <div class="card-subtitle">Active resource categories</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="card-header">
+            <span class="card-title">Handover Proofs</span>
+            <div class="card-icon" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple);">🛡️</div>
+          </div>
+          <div id="kpi-distributions" class="card-value">--</div>
+          <div class="card-subtitle">Verified on-chain QR deliveries</div>
+        </div>
+      </div>
+
+      <!-- How It Works Section -->
+      <div style="text-align: center; margin-top: 4rem;">
+        <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">How ReliefChain AI Works</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">A transparent, closed-loop pipeline from emergency request to verified physical handover.</p>
+      </div>
+
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="workflow-number">1</div>
+          <div class="workflow-icon">📍</div>
+          <h3 class="workflow-title">Citizen SOS Intake</h3>
+          <p class="workflow-desc">Affected citizens report disaster type, GPS location, affected population count, and urgent resource requirements.</p>
+        </div>
+
+        <div class="workflow-card">
+          <div class="workflow-number">2</div>
+          <div class="workflow-icon">🧠</div>
+          <h3 class="workflow-title">AI Triage Scoring</h3>
+          <p class="workflow-desc">The Decision Support System evaluates disaster severity, medical trauma, hazard scores, and wait times to assign transparent 0-100 priority tiers.</p>
+        </div>
+
+        <div class="workflow-card">
+          <div class="workflow-number">3</div>
+          <div class="workflow-icon">🏭</div>
+          <h3 class="workflow-title">NGO Depot Dispatch</h3>
+          <p class="workflow-desc">Relief organizations allocate supplies from warehouse stock with automatic over-allocation prevention and inventory reservation.</p>
+        </div>
+
+        <div class="workflow-card">
+          <div class="workflow-number">4</div>
+          <div class="workflow-icon">🔐</div>
+          <h3 class="workflow-title">QR Ledger Verification</h3>
+          <p class="workflow-desc">Volunteers scan single-use cryptographic QR tokens upon handover. GPS coordinates and tamper-evident SHA-256 block hashes seal the delivery.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: MISSION CONTROL DASHBOARD ==================== -->
+    <section id="tab-dashboard" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Emergency Operations Center</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Real-time triage dispatch, active relief missions, and warehouse balances.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+          <button class="btn btn-danger" onclick="openModal('sos-modal')">+ New SOS Request</button>
+          <button class="btn btn-primary" onclick="openModal('add-stock-modal')">+ Add Inventory</button>
+          <button class="btn btn-outline" onclick="loadDashboardStats()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="glass-panel" style="padding: 1.5rem; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="font-size: 1.1rem; font-weight: 700;">🚨 Priority Emergency Queue (Decision Support Triage)</h3>
+          <button class="btn btn-sm btn-outline" onclick="switchTab('requests')">View All Requests →</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Location / Zone</th>
+                <th>Disaster</th>
+                <th>Affected</th>
+                <th>AI Priority</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="urgent-queue-table-body">
+              <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading priority queue...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: RELIEF REQUESTS ==================== -->
+    <section id="tab-requests" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Relief Requests Directory</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Filter and process community aid submissions with AI prioritization ratings.</p>
+        </div>
+        <button class="btn btn-danger" onclick="openModal('sos-modal')">+ Create SOS Request</button>
+      </div>
+
+      <!-- Filters Toolbar -->
+      <div class="glass-panel" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+        <div style="flex: 1; min-width: 160px;">
+          <select id="request-status-filter" class="form-control" onchange="loadReliefRequests()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending Triage</option>
+            <option value="under_review">Under Review</option>
+            <option value="assigned">Assigned</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+
+        <div style="flex: 1; min-width: 160px;">
+          <select id="request-priority-filter" class="form-control" onchange="loadReliefRequests()">
+            <option value="">All Priorities</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        <div style="flex: 1; min-width: 160px;">
+          <select id="request-disaster-filter" class="form-control" onchange="loadReliefRequests()">
+            <option value="">All Disasters</option>
+            <option value="flood">Flood</option>
+            <option value="earthquake">Earthquake</option>
+            <option value="cyclone">Cyclone</option>
+            <option value="tsunami">Tsunami</option>
+            <option value="wildfire">Wildfire</option>
+            <option value="landslide">Landslide</option>
+          </select>
+        </div>
+
+        <div style="flex: 1; min-width: 160px;">
+          <select id="request-sort-filter" class="form-control" onchange="loadReliefRequests()">
+            <option value="urgency">Sort by Urgency (Critical First)</option>
+            <option value="affected_people">Sort by Affected Population</option>
+            <option value="created_at">Sort by Newest Submission</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Location & GPS</th>
+              <th>Disaster</th>
+              <th>Affected</th>
+              <th>AI Priority & Confidence</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="relief-requests-table-body">
+            <tr><td colspan="7" style="text-align: center; padding: 2.5rem;">Loading relief requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: RESOURCES & INVENTORY ==================== -->
+    <section id="tab-resources" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Warehouse Inventory Depot</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Track stock balances, reserved allocations, and emergency replenishment alerts.</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-stock-modal')">+ Restock Inventory</button>
+      </div>
+
+      <!-- Low Stock Alerts Banner -->
+      <div id="inventory-alerts-container" style="margin-bottom: 1.5rem;"></div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Resource Name</th>
+              <th>Category</th>
+              <th>Available Stock</th>
+              <th>Allocated (Reserved)</th>
+              <th>Total On-Hand</th>
+              <th>Depot Location</th>
+            </tr>
+          </thead>
+          <tbody id="inventory-table-body">
+            <tr><td colspan="6" style="text-align: center; padding: 2.5rem;">Loading warehouse balances...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: DISTRIBUTIONS & QR ==================== -->
+    <section id="tab-distributions" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Distribution Missions & QR Verification</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Dispatch missions, dynamic QR proof generation, and volunteer field verification.</p>
+        </div>
+        <button class="btn btn-outline" onclick="openModal('volunteer-scan-modal')">📱 Field Volunteer Scanner Simulator</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Target Location</th>
+              <th>Resource Dispatched</th>
+              <th>Quantity</th>
+              <th>Status</th>
+              <th>QR Token</th>
+              <th>Blockchain Tx</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="distributions-table-body">
+            <tr><td colspan="7" style="text-align: center; padding: 2.5rem;">Loading distribution missions...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 6: TRANSPARENCY LEDGER ==================== -->
+    <section id="tab-ledger" class="tab-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.75rem; font-weight: 800;">Blockchain Transparency Ledger</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Cryptographically sealed Merkle block sequence for immutable humanitarian aid tracking.</p>
+        </div>
+        <button class="btn btn-primary" onclick="runLedgerVerification()">🛡️ Verify Whole Ledger Chain Integrity</button>
+      </div>
+
+      <div id="ledger-verification-result" style="margin-bottom: 1.5rem;"></div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Block #</th>
+              <th>Event Type</th>
+              <th>Transaction Hash</th>
+              <th>Previous Block Hash</th>
+              <th>Status</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-table-body">
+            <tr><td colspan="6" style="text-align: center; padding: 2.5rem;">Loading audit blocks...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 7: ANALYTICS ==================== -->
+    <section id="tab-analytics" class="tab-content">
+      <div style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.75rem; font-weight: 800;">Relief Analytics & Predictive Insights</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Live analytics generated directly from real database operations.</p>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Relief Requests by Disaster Type</h3>
+            <span class="badge badge-sm badge-status-assigned">Live Data</span>
+          </div>
+          <div id="chart-disasters" class="chart-container"></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">AI Triage Priority Distribution</h3>
+            <span class="badge badge-sm badge-status-assigned">DSS Engine</span>
+          </div>
+          <div id="chart-priority" class="chart-container"></div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom: 2rem;">
+        <div class="chart-header">
+          <h3 class="chart-title">Lifecycle Request States</h3>
+          <span class="badge badge-sm badge-status-assigned">Operations</span>
+        </div>
+        <div id="chart-status" class="chart-container"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- SOS Emergency Modal -->
+  <div id="sos-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: var(--accent-rose);">🚨 Emergency SOS Relief Request</h3>
+        <button class="modal-close" onclick="closeModal('sos-modal')">&times;</button>
+      </div>
+      <form id="sos-form" onsubmit="handleSosSubmit(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Disaster Category</label>
+            <select id="sos-disaster-type" class="form-control" required>
+              <option value="flood">Flood</option>
+              <option value="earthquake">Earthquake</option>
+              <option value="cyclone">Cyclone</option>
+              <option value="tsunami">Tsunami</option>
+              <option value="wildfire">Wildfire</option>
+              <option value="landslide">Landslide</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Affected Population Count</label>
+            <input id="sos-affected-people" type="number" class="form-control" min="1" value="10" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Location / Community Name</label>
+          <input id="sos-location-name" type="text" class="form-control" placeholder="e.g. Riverbend Sector 4, Shelter Camp B" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Latitude</label>
+            <input id="sos-lat" type="number" step="0.0001" class="form-control" value="28.6139" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Longitude</label>
+            <input id="sos-lng" type="number" step="0.0001" class="form-control" value="77.2090" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Critical Supplies Checklist</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+            <label><input type="checkbox" id="sos-need-medical" /> 💉 Medical / Trauma Kits</label>
+            <label><input type="checkbox" id="sos-need-water" /> 💧 Clean Drinking Water</label>
+            <label><input type="checkbox" id="sos-need-food" /> 🍲 Emergency Food Rations</label>
+            <label><input type="checkbox" id="sos-need-vulnerable" /> 👶 Infants / Elderly Stranded</label>
+          </div>
+        </div>
+
+        <!-- Live AI Triage Feedback Banner -->
+        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 700; text-transform: uppercase;">Real-Time AI Decision Support Triage:</div>
+            <div id="sos-ai-score-display" style="font-size: 0.85rem; color: var(--text-main); font-weight: 600;">Priority Score: 85/100</div>
+          </div>
+          <span id="sos-ai-priority-badge" class="badge badge-critical">CRITICAL</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Urgency Details</label>
+          <textarea id="sos-description" class="form-control" rows="3" placeholder="Describe the current ground condition, road accessibility, or specific medical urgencies..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-danger" style="width: 100%;">Submit SOS Emergency Request</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Request Details Modal -->
+  <div id="request-detail-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Relief Request Details</h3>
+        <button class="modal-close" onclick="closeModal('request-detail-modal')">&times;</button>
+      </div>
+      <div id="request-detail-body">
+        <p>Loading details...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dispatch Modal -->
+  <div id="dispatch-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Dispatch Relief Distribution</h3>
+        <button class="modal-close" onclick="closeModal('dispatch-modal')">&times;</button>
+      </div>
+      <form id="dispatch-form" onsubmit="handleCreateDistribution(event)">
+        <input type="hidden" id="dispatch-req-id" />
+        
+        <div class="form-group">
+          <label class="form-label">Select Supply Item</label>
+          <select id="dispatch-resource-select" class="form-control" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Quantity to Allocate</label>
+          <input id="dispatch-qty" type="number" step="0.5" class="form-control" value="10" min="0.1" required />
+          <small style="color: var(--text-dim);">Over-allocation prevention is enforced against available warehouse stock.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fulfilling Organization</label>
+          <select id="dispatch-org-select" class="form-control" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dispatch Location / Depot</label>
+          <input id="dispatch-depot" type="text" class="form-control" value="Metropolis Main Logistics Hub" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Confirm Dispatch & Lock Inventory</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Display Modal -->
+  <div id="qr-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Cryptographic Proof-of-Delivery QR</h3>
+        <button class="modal-close" onclick="closeModal('qr-modal')">&times;</button>
+      </div>
+      <div id="qr-modal-body">
+        <p>Generating verification token...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Volunteer Scan Modal -->
+  <div id="volunteer-scan-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Field Volunteer Delivery Confirmation</h3>
+        <button class="modal-close" onclick="closeModal('volunteer-scan-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleConfirmDelivery(event)">
+        <div class="form-group">
+          <label class="form-label">Scanned QR Verification Token</label>
+          <input id="scan-token-input" type="text" class="form-control" placeholder="Paste or scan cryptographic token..." required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">GPS Latitude</label>
+            <input id="scan-lat" type="number" step="0.0001" class="form-control" value="28.5355" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">GPS Longitude</label>
+            <input id="scan-lng" type="number" step="0.0001" class="form-control" value="77.3910" required />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Verify & Commit Handover to Blockchain</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Stock Modal -->
+  <div id="add-stock-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Add / Restock Warehouse Inventory</h3>
+        <button class="modal-close" onclick="closeModal('add-stock-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleAddInventory(event)">
+        <div class="form-group">
+          <label class="form-label">Select Resource</label>
+          <select id="stock-resource-select" class="form-control" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Replenishment Quantity</label>
+          <input id="stock-quantity" type="number" class="form-control" min="1" value="100" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Depot Facility</label>
+          <input id="stock-warehouse" type="text" class="form-control" value="Central Emergency Warehouse B" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Update Inventory Stock</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Donation Modal -->
+  <div id="donate-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">💙 Donate Humanitarian Aid</h3>
+        <button class="modal-close" onclick="closeModal('donate-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleDonationSubmit(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input id="don-name" type="text" class="form-control" placeholder="Jane Doe" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input id="don-email" type="email" class="form-control" placeholder="jane@example.com" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Donation Type</label>
+            <select id="don-type" class="form-control" required>
+              <option value="monetary">Monetary (USD)</option>
+              <option value="resource">In-Kind Physical Supplies</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount ($ USD)</label>
+            <input id="don-amount" type="number" class="form-control" value="150" min="1" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Beneficiary Relief Organization</label>
+          <select id="don-org-select" class="form-control" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Dedication Notes</label>
+          <input id="don-notes" type="text" class="form-control" placeholder="e.g. Emergency Flood Relief Fund" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit & Generate Blockchain Fingerprint</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Account Access & Role Switcher</h3>
+        <button class="modal-close" onclick="closeModal('auth-modal')">&times;</button>
+      </div>
+      
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+        Select an instant demo persona to explore role-based permissions or sign in:
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-outline" onclick="demoLogin('admin')">🔑 Sign In as Administrator</button>
+        <button class="btn btn-outline" onclick="demoLogin('ngo')">🏢 Sign In as Relief Organization (NGO)</button>
+        <button class="btn btn-outline" onclick="demoLogin('volunteer')">🦺 Sign In as Field Volunteer</button>
+        <button class="btn btn-outline" onclick="demoLogin('citizen')">📍 Sign In as Citizen / Beneficiary</button>
+        <button class="btn btn-outline" onclick="demoLogin('donor')">💙 Sign In as Donor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

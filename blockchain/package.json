@@ -1,0 +1,18 @@
+{
+  "name": "reliefchain-blockchain",
+  "version": "1.0.0",
+  "description": "Smart contracts and tests for ReliefChain AI disaster relief ledger",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js"
+  },
+  "keywords": ["blockchain", "solidity", "hardhat", "disaster-relief", "web3"],
+  "author": "Shivam Dwivedi",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.22.0"
+  }
+}
