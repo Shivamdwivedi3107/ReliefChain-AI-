@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ReliefChain AI</string>
+    <string name="title_activity_main">ReliefChain AI</string>
+    <string name="package_name">com.shivam.reliefchainai</string>
+    <string name="custom_url_scheme">com.shivam.reliefchainai</string>
+</resources>

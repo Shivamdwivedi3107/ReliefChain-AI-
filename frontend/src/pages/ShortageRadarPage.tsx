@@ -49,6 +49,13 @@ export const ShortageRadarPage: React.FC = () => {
         </div>
       </div>
 
+      {loading && (
+        <div className="text-xs text-cyan-400 font-semibold flex items-center gap-2 bg-slate-900/60 border border-cyan-500/20 px-3 py-2 rounded-lg">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          Calculating SPHERE supply buffer shortages...
+        </div>
+      )}
+
       {/* Summary Alert Banner */}
       <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-l-4 border-l-rose-500">
         <div>

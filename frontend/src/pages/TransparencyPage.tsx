@@ -66,6 +66,22 @@ export const TransparencyPage: React.FC = () => {
         </form>
       </Card>
 
+      {/* Recent Journeys Bar */}
+      {journeys && journeys.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 text-xs">
+          <span className="text-slate-400 font-semibold whitespace-nowrap">Recent Journeys:</span>
+          {journeys.slice(0, 5).map((j: any, i: number) => (
+            <button
+              key={i}
+              onClick={() => loadJourney(j.reference_id)}
+              className="bg-slate-900 border border-slate-800 hover:border-cyan-500 text-slate-300 px-2.5 py-1 rounded-lg font-mono text-[11px] transition whitespace-nowrap"
+            >
+              {j.reference_id || `Journey #${i + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 6-Stage Roadmap */}
       {selectedJourney && (
         <Card title={`🚀 Verifiable Aid Delivery Pipeline: ${selectedJourney.reference_id}`} subtitle="Sequential cryptographic verification stages">

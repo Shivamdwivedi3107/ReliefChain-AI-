@@ -79,6 +79,7 @@ origins = (
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins if origins else ["*"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?" if (settings.ENVIRONMENT or "development").lower() == "development" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

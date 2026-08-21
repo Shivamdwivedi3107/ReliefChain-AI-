@@ -41,6 +41,13 @@ export const AdminCommandCenter: React.FC = () => {
         </div>
       </div>
 
+      {loading && (
+        <div className="text-xs text-cyan-400 font-semibold flex items-center gap-2 bg-slate-900/60 border border-cyan-500/20 px-3 py-2 rounded-lg">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          Refreshing operational telemetry...
+        </div>
+      )}
+
       {/* Top Threat KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard

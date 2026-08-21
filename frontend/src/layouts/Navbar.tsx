@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { Button, Badge } from '../components/common';
@@ -8,7 +8,6 @@ export const Navbar: React.FC = () => {
   const { user, logout, switchDemoRole } = useAuth();
   const { unreadCount } = useNotifications();
   const [notifOpen, setNotifOpen] = React.useState(false);
-  const location = useLocation();
 
   return (
     <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
